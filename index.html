@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>RutaStop</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    #controls {
+      padding: 10px;
+      background: #f4f4f4;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    input {
+      padding: 8px;
+      width: 200px;
+    }
+
+    button {
+      padding: 8px 12px;
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    #map {
+      height: calc(100vh - 60px);
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="controls">
+  <input id="start" placeholder="Départ (ex: Paris)">
+  <input id="end" placeholder="Arrivée (ex: Barcelone)">
+  <button onclick="calculateRoute()">Calculer</button>
+</div>
+
+<div id="map"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+  // Initialisation carte
+  var map = L.map('map').setView([48.8566, 2.3522], 6);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+
+  var routeLayer;
+
+  // Fonction géocodage via Nominatim (gratuit)
+  async function geocode(place) {
+    let url = `https://nominatim.openstreetmap.org/search?format=json&q=${place}`;
+    let response = await fetch(url);
+    let data = await response.json();
+    return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+  }
+
+  // Fonction calcul route
+  async function calculateRoute() {
+    let start = document.getElementById("start").value;
+    let end = document.getElementById("end").value;
+
+    let startCoords = await geocode(start);
+    let endCoords = await geocode(end);
+
+    // OpenRouteService (clé gratuite à ajouter)
+    let apiKey = "VOTRE_API_KEY_ICI";
+
+    let url = `https://api.openrouteservice.org/v2/directions/driving-car`;
+
+    let response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Authorization": apiKey,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        coordinates: [
+          [startCoords[1], startCoords[0]],
+          [endCoords[1], endCoords[0]]
+        ]
+      })
+    });
+
+    let data = await response.json();
+
+    let coords = data.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
+
+    if (routeLayer) {
+      map.removeLayer(routeLayer);
+    }
+
+    routeLayer = L.polyline(coords, {color: "blue"}).addTo(map);
+
+    map.fitBounds(routeLayer.getBounds());
+  }
+</script>
+
+</body>
+</html>
