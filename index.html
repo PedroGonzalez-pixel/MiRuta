@@ -2,8 +2,8 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>MiRuta</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MiRuta</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -18,11 +18,11 @@ input, button { padding:8px; margin:5px; }
 <body>
 
 <div id="controls">
-<input id="start" placeholder="Départ">
-<input id="end" placeholder="Arrivée">
-<input id="apiKey" placeholder="Clé API OpenRouteService">
+<input id="start" placeholder="Départ (Paris)">
+<input id="end" placeholder="Arrivée (Barcelone)">
+<input id="apiKey" placeholder="Clé API">
 <button onclick="route()">Itinéraire</button>
-<button onclick="findStops()">Arrêts</button>
+<button onclick="findStops()">Stations</button>
 </div>
 
 <div id="map"></div>
@@ -30,7 +30,6 @@ input, button { padding:8px; margin:5px; }
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-
 var map = L.map('map').setView([48.85,2.35],6);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
@@ -79,12 +78,10 @@ async function route(){
 
 async function findStops(){
 
- alert("Version simple : recherche en cours...");
-
  let points = routeCoords.filter((_,i)=>i%30===0);
 
  let query = "[out:json];(" +
-  points.map(p=>`node(around:2000,${p[0]},${p[1]})["amenity"="fuel"];`).join("") +
+  points.map(p=>`node(around:2000,${p[0]},${p[1]})['amenity'='fuel'];`).join("") +
   ");out;";
 
  let res = await fetch("https://overpass-api.de/api/interpreter",{
@@ -100,7 +97,6 @@ async function findStops(){
  });
 
 }
-
 </script>
 
 </body>
