@@ -298,6 +298,7 @@ input[type=text]::placeholder{color:var(--text3);}
 .results-list{
   flex:1;overflow-y:auto;padding:0 16px 16px;
   scrollbar-width:thin;scrollbar-color:var(--surface2) transparent;
+  min-height:0;
 }
 
 .result-card{
@@ -504,8 +505,9 @@ input[type=text]::placeholder{color:var(--text3);}
 <script>
 const ORS_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjZhMmQ3MGMxMDcxZTQ2MDk4MDNkOGQyYTE2ZGZhYTcyIiwiaCI6Im11cm11cjY0In0=";
 
+// overpass.private.coffee allows cross-origin requests and is reliable
 const OVERPASS = [
-  "https://overpass.kumi.systems/api/interpreter",
+  "https://overpass.private.coffee/api/interpreter",
   "https://overpass-api.de/api/interpreter"
 ];
 
@@ -639,7 +641,6 @@ async function calcRoute(){
 async function findStops(){
   if(!routeCoords.length){ setStatus("Tracez d'abord un itinéraire","error"); return; }
 
-  // Remove old stop markers but keep route endpoints (first 2)
   const keep = markers.slice(0,2);
   markers.slice(2).forEach(m=>map.removeLayer(m));
   markers = keep;
@@ -648,53 +649,62 @@ async function findStops(){
 
   setStatus("Recherche des arrêts en cours…","loading");
 
-  const pts = routeCoords.filter((_,i)=>i%60===0);
-  const queries = [];
+  // Compute a bounding box around the route with a small buffer (~20km)
+  const lats = routeCoords.map(c=>c[0]);
+  const lons = routeCoords.map(c=>c[1]);
+  const buf = 0.18; // ~20km
+  const S = (Math.min(...lats)-buf).toFixed(5);
+  const N = (Math.max(...lats)+buf).toFixed(5);
+  const W = (Math.min(...lons)-buf).toFixed(5);
+  const E = (Math.max(...lons)+buf).toFixed(5);
+  const bbox = `${S},${W},${N},${E}`;
 
-  if(activeFilters.has("fuel"))
-    queries.push(`node(around:1200,LAT,LON)["amenity"="fuel"];`);
-  if(activeFilters.has("food"))
-    queries.push(`node(around:1200,LAT,LON)["amenity"~"restaurant|fast_food|cafe"];`);
-  if(activeFilters.has("rest"))
-    queries.push(`node(around:1200,LAT,LON)["highway"="rest_area"];
-    node(around:1200,LAT,LON)["highway"="services"];`);
+  // Build filter union based on active chips
+  const parts = [];
+  if(activeFilters.has("fuel"))  parts.push(`node["amenity"="fuel"](${bbox});`);
+  if(activeFilters.has("food"))  parts.push(`node["amenity"~"^(restaurant|fast_food|cafe)$"](${bbox});`);
+  if(activeFilters.has("rest"))  parts.push(`node["highway"~"^(rest_area|services)$"](${bbox});`);
 
-  if(!queries.length){ setStatus("Aucun filtre actif","error"); return; }
+  if(!parts.length){ setStatus("Aucun filtre actif","error"); return; }
+
+  const qBody = `[out:json][timeout:25];\n(\n${parts.join("\n")}\n);\nout 200;`;
 
   let data = null;
   for(const ep of OVERPASS){
     try{
-      const qBody = `[out:json][timeout:15];(\n${pts.map(p=>{
-        return queries.map(q=>q.replace(/LAT/g,p[0]).replace(/LON/g,p[1])).join("\n");
-      }).join("\n")}\n);out;`;
-      const r = await fetch(ep, {method:"POST",body:qBody});
+      const r = await fetch(ep, {method:"POST", body:qBody});
+      if(!r.ok) throw new Error("HTTP "+r.status);
       data = await r.json();
-      if(data?.elements) break;
-    } catch(err){ console.warn("Overpass fallback",err); }
+      if(data?.elements?.length) break;
+    } catch(err){ console.warn("Overpass fallback",ep,err); }
   }
 
   if(!data?.elements?.length){
     setStatus("Aucun arrêt trouvé sur ce trajet","error"); return;
   }
 
-  // Classify and deduplicate
+  // Keep only points close enough to the actual polyline (≤ ~15km, ~0.13°)
+  const MAX_DIST = 0.13;
   const seen = new Set();
   const raw = [];
   data.elements.forEach(e=>{
     if(!e.lat||!e.lon||seen.has(e.id)) return;
     seen.add(e.id);
     const dist = distToRoute(e.lat,e.lon);
+    if(dist > MAX_DIST) return;
     let type="rest", label="Aire de repos";
     const am = e.tags?.amenity||"";
     const hw = e.tags?.highway||"";
     if(am==="fuel"){ type="fuel"; label="Station-service"; }
-    else if(["restaurant","fast_food","cafe"].includes(am)){ type="food"; label=am==="cafe"?"Café":am==="fast_food"?"Restauration rapide":"Restaurant"; }
-    else if(hw==="services"){ label="Aire de services"; }
+    else if(["restaurant","fast_food","cafe"].includes(am)){
+      type="food";
+      label = am==="cafe"?"Café" : am==="fast_food"?"Restauration rapide" : "Restaurant";
+    } else if(hw==="services"){ label="Aire de services"; }
     raw.push({e,dist,type,label});
   });
 
   raw.sort((a,b)=>a.dist-b.dist);
-  allStops = raw.slice(0,15);
+  allStops = raw.slice(0,20);
 
   renderStops();
   setStatus(`${allStops.length} arrêts trouvés sur le trajet`,"ok");
