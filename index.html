@@ -1,927 +1,217 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MiRuta Pro</title>
+<meta charset="UTF-8">
+<title>MiRuta Pro v4</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""
-  />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <style>
-    :root {
-      --bg: #f6f8fb;
-      --panel: #ffffff;
-      --line: #d9e1ec;
-      --text: #1d2a3a;
-      --muted: #607086;
-      --accent: #1664d1;
-      --accent-dark: #0e4fb0;
-      --ok: #0f9d58;
-      --food: #d93025;
-      --fuel: #0f9d58;
-      --shadow: 0 8px 24px rgba(0,0,0,0.08);
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      color: var(--text);
-      background: var(--bg);
-    }
-
-    .app {
-      display: grid;
-      grid-template-columns: 380px 1fr;
-      height: 100vh;
-    }
-
-    .sidebar {
-      background: var(--panel);
-      border-right: 1px solid var(--line);
-      padding: 18px;
-      overflow-y: auto;
-    }
-
-    .map-wrap {
-      position: relative;
-    }
-
-    #map {
-      width: 100%;
-      height: 100vh;
-    }
-
-    h1 {
-      margin: 0 0 6px;
-      font-size: 28px;
-      line-height: 1.1;
-    }
-
-    .subtitle {
-      margin: 0 0 18px;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    .card {
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 14px;
-      margin-bottom: 14px;
-      box-shadow: 0 1px 2px rgba(0,0,0,.03);
-    }
-
-    .card-title {
-      font-size: 15px;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-
-    label {
-      display: block;
-      font-size: 13px;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-
-    input, select {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 11px 12px;
-      font-size: 14px;
-      background: #fff;
-      outline: none;
-    }
-
-    input:focus, select:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(22,100,209,.10);
-    }
-
-    .grid {
-      display: grid;
-      gap: 10px;
-    }
-
-    .two {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .buttons {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 12px;
-    }
-
-    button {
-      border: none;
-      border-radius: 10px;
-      padding: 11px 14px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: var(--accent-dark);
-    }
-
-    .btn-secondary {
-      background: #eef4ff;
-      color: var(--accent);
-      border: 1px solid #cfe0ff;
-    }
-
-    .btn-light {
-      background: #fff;
-      color: var(--text);
-      border: 1px solid var(--line);
-    }
-
-    .status {
-      margin-top: 12px;
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid #d9e6ff;
-      background: #eff5ff;
-      color: #194b9b;
-      font-size: 13px;
-      line-height: 1.5;
-      min-height: 44px;
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .stat {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 12px;
-      background: #fbfdff;
-    }
-
-    .stat small {
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-      margin-bottom: 6px;
-    }
-
-    .stat strong {
-      font-size: 22px;
-      line-height: 1;
-    }
-
-    .results {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: grid;
-      gap: 8px;
-      max-height: 360px;
-      overflow-y: auto;
-    }
-
-    .result-item {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 10px;
-      background: #fff;
-      cursor: pointer;
-      transition: transform .12s ease, border-color .12s ease;
-    }
-
-    .result-item:hover {
-      transform: translateY(-1px);
-      border-color: #b8cdf2;
-    }
-
-    .result-title {
-      font-size: 14px;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    .result-meta {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
-    .pill {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 700;
-      color: white;
-      margin-right: 6px;
-    }
-
-    .pill-fuel { background: var(--fuel); }
-    .pill-food { background: var(--food); }
-
-    .help {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.6;
-    }
-
-    .top-note {
-      position: absolute;
-      top: 14px;
-      left: 14px;
-      z-index: 1000;
-      background: rgba(255,255,255,0.94);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 10px 12px;
-      box-shadow: var(--shadow);
-      font-size: 12px;
-      color: var(--muted);
-      max-width: 460px;
-    }
-
-    .dot {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      margin-right: 6px;
-      vertical-align: middle;
-    }
-
-    @media (max-width: 980px) {
-      .app {
-        grid-template-columns: 1fr;
-      }
-
-      .sidebar {
-        max-height: 52vh;
-      }
-
-      #map {
-        height: 48vh;
-      }
-
-      .top-note {
-        max-width: calc(100% - 28px);
-      }
-    }
-  </style>
+<style>
+body { margin:0; font-family: Arial; }
+.sidebar {
+  width:300px;
+  height:100vh;
+  float:left;
+  padding:15px;
+  background:#f4f4f4;
+  overflow:auto;
+}
+#map {
+  margin-left:300px;
+  height:100vh;
+}
+input, button, select {
+  width:100%;
+  margin-bottom:8px;
+  padding:8px;
+}
+button {
+  background:#007bff;
+  color:white;
+  border:none;
+  cursor:pointer;
+}
+</style>
 </head>
+
 <body>
-  <div class="app">
-    <aside class="sidebar">
-      <h1>MiRuta Pro</h1>
-      <p class="subtitle">
-        Planificateur de trajet autoroutier gratuit avec itinéraire, stations-service et restaurants proches du trajet.
-      </p>
-
-      <div class="card">
-        <div class="card-title">Trajet</div>
-        <div class="grid">
-          <div>
-            <label for="start">Départ</label>
-            <input id="start" type="text" placeholder="Ex : Paris" value="Paris" />
-          </div>
-          <div>
-            <label for="end">Arrivée</label>
-            <input id="end" type="text" placeholder="Ex : Barcelone" value="Barcelone" />
-          </div>
-
-          <div class="two">
-            <div>
-              <label for="maxDistance">Distance max depuis la route</label>
-              <select id="maxDistance">
-                <option value="1000">1 km</option>
-                <option value="2000" selected>2 km</option>
-                <option value="3000">3 km</option>
-                <option value="5000">5 km</option>
-              </select>
-            </div>
-            <div>
-              <label for="maxResults">Nombre max de résultats</label>
-              <select id="maxResults">
-                <option value="10">10</option>
-                <option value="20" selected>20</option>
-                <option value="30">30</option>
-                <option value="50">50</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="two">
-            <div>
-              <label for="pauseEvery">Suggestion de pause</label>
-              <select id="pauseEvery">
-                <option value="0" selected>Sans suggestion</option>
-                <option value="120">Toutes les 2h</option>
-                <option value="180">Toutes les 3h</option>
-                <option value="240">Toutes les 4h</option>
-              </select>
-            </div>
-            <div>
-              <label for="poiType">Type d’arrêts</label>
-              <select id="poiType">
-                <option value="all" selected>Stations + restaurants</option>
-                <option value="fuel">Stations uniquement</option>
-                <option value="food">Restaurants uniquement</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div class="buttons">
-          <button class="btn-primary" id="btnRoute">Tracer l’itinéraire</button>
-          <button class="btn-secondary" id="btnStops">Trouver les arrêts</button>
-        </div>
-
-        <div class="buttons">
-          <button class="btn-light" id="btnDemo">Démo Paris → Barcelone</button>
-          <button class="btn-light" id="btnClear">Effacer</button>
-        </div>
-
-        <div class="status" id="status">
-          La clé OpenRouteService est déjà intégrée. Clique sur « Tracer l’itinéraire » pour démarrer.
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Résumé</div>
-        <div class="stats">
-          <div class="stat">
-            <small>Distance</small>
-            <strong id="distance">-</strong>
-          </div>
-          <div class="stat">
-            <small>Durée</small>
-            <strong id="duration">-</strong>
-          </div>
-          <div class="stat">
-            <small>Stations</small>
-            <strong id="fuelCount">0</strong>
-          </div>
-          <div class="stat">
-            <small>Restaurants</small>
-            <strong id="foodCount">0</strong>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Arrêts détectés</div>
-        <ul class="results" id="resultsList"></ul>
-      </div>
-
-      <div class="help">
-        <strong>Attention :</strong> la clé API est intégrée dans le code. Si le dépôt est public, la clé sera visible publiquement.
-      </div>
-    </aside>
-
-    <main class="map-wrap">
-      <div class="top-note">
-        <span class="dot" style="background:#1664d1"></span> Itinéraire
-        &nbsp;&nbsp;
-        <span class="dot" style="background:#0f9d58"></span> Station-service
-        &nbsp;&nbsp;
-        <span class="dot" style="background:#d93025"></span> Restaurant / café
-      </div>
-      <div id="map"></div>
-    </main>
-  </div>
-
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""
-  ></script>
-
-  <script>
-    // ===============================
-    // CONFIG
-    // ===============================
-    const ORS_API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjZhMmQ3MGMxMDcxZTQ2MDk4MDNkOGQyYTE2ZGZhYTcyIiwiaCI6Im11cm11cjY0In0=";
-
-    // ===============================
-    // MAP
-    // ===============================
-    const map = L.map("map").setView([46.603354, 1.888334], 6);
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "&copy; OpenStreetMap contributors"
-    }).addTo(map);
-
-    const fuelIcon = L.divIcon({
-      className: "custom-div-icon",
-      html: '<div style="background:#0f9d58;width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 0 0 1px #0f9d58"></div>',
-      iconSize: [14, 14],
-      iconAnchor: [7, 7]
-    });
-
-    const foodIcon = L.divIcon({
-      className: "custom-div-icon",
-      html: '<div style="background:#d93025;width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 0 0 1px #d93025"></div>',
-      iconSize: [14, 14],
-      iconAnchor: [7, 7]
-    });
-
-    const pauseIcon = L.divIcon({
-      className: "custom-div-icon",
-      html: '<div style="background:#f4b400;width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 0 0 1px #f4b400"></div>',
-      iconSize: [14, 14],
-      iconAnchor: [7, 7]
-    });
-
-    let routeLayer = null;
-    let poiLayer = L.layerGroup().addTo(map);
-    let pauseLayer = L.layerGroup().addTo(map);
-    let routeCoords = [];
-    let routeSummary = null;
-
-    const statusBox = document.getElementById("status");
-    const resultsList = document.getElementById("resultsList");
-
-    // ===============================
-    // HELPERS
-    // ===============================
-    function setStatus(message, type = "info") {
-      const styles = {
-        info: ["#eff5ff", "#194b9b", "#d9e6ff"],
-        ok: ["#eefbf3", "#0a6e3c", "#c9efd8"],
-        warn: ["#fff8e7", "#8b6a00", "#f3df9d"],
-        err: ["#fff1f0", "#a12a22", "#f3c7c3"]
-      };
-
-      const s = styles[type] || styles.info;
-      statusBox.style.background = s[0];
-      statusBox.style.color = s[1];
-      statusBox.style.borderColor = s[2];
-      statusBox.textContent = message;
-    }
-
-    function formatDistance(meters) {
-      if (meters == null) return "-";
-      return meters >= 1000 ? (meters / 1000).toFixed(1) + " km" : Math.round(meters) + " m";
-    }
-
-    function formatDuration(seconds) {
-      if (seconds == null) return "-";
-      const h = Math.floor(seconds / 3600);
-      const m = Math.round((seconds % 3600) / 60);
-      return h > 0 ? `${h} h ${m} min` : `${m} min`;
-    }
-
-    function escapeHtml(str = "") {
-      return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-
-    function clearAll() {
-      if (routeLayer) {
-        map.removeLayer(routeLayer);
-        routeLayer = null;
-      }
-      poiLayer.clearLayers();
-      pauseLayer.clearLayers();
-      routeCoords = [];
-      routeSummary = null;
-
-      document.getElementById("distance").textContent = "-";
-      document.getElementById("duration").textContent = "-";
-      document.getElementById("fuelCount").textContent = "0";
-      document.getElementById("foodCount").textContent = "0";
-      resultsList.innerHTML = "";
-
-      setStatus("Carte nettoyée. Tu peux lancer un nouveau trajet.", "info");
-    }
-
-    async function geocode(place) {
-      const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(place)}`;
-      const res = await fetch(url, { headers: { "Accept": "application/json" } });
-      const data = await res.json();
-
-      if (!data || !data.length) {
-        throw new Error(`Lieu introuvable : ${place}`);
-      }
-
-      return {
-        lat: parseFloat(data[0].lat),
-        lon: parseFloat(data[0].lon),
-        label: data[0].display_name
-      };
-    }
-
-    async function fetchRoute(start, end) {
-      const res = await fetch("https://api.openrouteservice.org/v2/directions/driving-car/geojson", {
-        method: "POST",
-        headers: {
-          "Authorization": ORS_API_KEY,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          coordinates: [
-            [start.lon, start.lat],
-            [end.lon, end.lat]
-          ]
-        })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.error?.message || "Erreur OpenRouteService");
-      }
-
-      if (!data.features || !data.features.length) {
-        throw new Error("Aucun itinéraire trouvé.");
-      }
-
-      return data;
-    }
-
-    function computeBounds(coords) {
-      let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
-
-      coords.forEach(([lat, lon]) => {
-        if (lat < minLat) minLat = lat;
-        if (lat > maxLat) maxLat = lat;
-        if (lon < minLon) minLon = lon;
-        if (lon > maxLon) maxLon = lon;
-      });
-
-      return { minLat, maxLat, minLon, maxLon };
-    }
-
-    function expandBounds(bounds, meters = 5000) {
-      // approximation
-      const latDelta = meters / 111320;
-      const lonDelta = meters / (111320 * Math.cos(((bounds.minLat + bounds.maxLat) / 2) * Math.PI / 180));
-
-      return {
-        minLat: bounds.minLat - latDelta,
-        maxLat: bounds.maxLat + latDelta,
-        minLon: bounds.minLon - lonDelta,
-        maxLon: bounds.maxLon + lonDelta
-      };
-    }
-
-    function latLonToXY(lat, lon, refLat) {
-      const x = lon * 111320 * Math.cos(refLat * Math.PI / 180);
-      const y = lat * 111320;
-      return { x, y };
-    }
-
-    function pointSegmentDistanceMeters(p, a, b) {
-      const refLat = p[0];
-      const P = latLonToXY(p[0], p[1], refLat);
-      const A = latLonToXY(a[0], a[1], refLat);
-      const B = latLonToXY(b[0], b[1], refLat);
-
-      const ABx = B.x - A.x;
-      const ABy = B.y - A.y;
-      const APx = P.x - A.x;
-      const APy = P.y - A.y;
-
-      const ab2 = ABx * ABx + ABy * ABy;
-      const t = ab2 === 0 ? 0 : Math.max(0, Math.min(1, (APx * ABx + APy * ABy) / ab2));
-
-      const closestX = A.x + t * ABx;
-      const closestY = A.y + t * ABy;
-
-      const dx = P.x - closestX;
-      const dy = P.y - closestY;
-
-      return Math.sqrt(dx * dx + dy * dy);
-    }
-
-    function distancePointToRouteMeters(point, coords) {
-      let min = Infinity;
-      for (let i = 0; i < coords.length - 1; i++) {
-        const d = pointSegmentDistanceMeters(point, coords[i], coords[i + 1]);
-        if (d < min) min = d;
-      }
-      return min;
-    }
-
-    function routeDistanceMarkers(coords, summarySeconds) {
-      const pauseEveryMinutes = Number(document.getElementById("pauseEvery").value);
-      pauseLayer.clearLayers();
-
-      if (!pauseEveryMinutes || !summarySeconds) return;
-
-      const totalSeconds = summarySeconds;
-      const totalMeters = routeSummary.distance;
-      const segmentMeters = totalMeters * (pauseEveryMinutes * 60 / totalSeconds);
-
-      if (!segmentMeters || segmentMeters <= 0) return;
-
-      let accumulated = 0;
-      let nextTarget = segmentMeters;
-
-      for (let i = 1; i < coords.length; i++) {
-        const prev = coords[i - 1];
-        const curr = coords[i];
-        const d = pointSegmentDistanceMeters(curr, prev, curr); // approx length segment
-        accumulated += d;
-
-        if (accumulated >= nextTarget) {
-          L.marker(curr, { icon: pauseIcon })
-            .bindPopup(`⏸️ Pause suggérée à environ ${Math.round(nextTarget / 1000)} km`)
-            .addTo(pauseLayer);
-          nextTarget += segmentMeters;
-        }
-      }
-    }
-
-    async function queryPoisInBounds(bounds) {
-      const poiType = document.getElementById("poiType").value;
-
-      let filters = "";
-      if (poiType === "fuel") {
-        filters = `
-          node["amenity"="fuel"](${bounds.minLat},${bounds.minLon},${bounds.maxLat},${bounds.maxLon});
-          way["amenity"="fuel"](${bounds.minLat},${bounds.minLon},${bounds.maxLat},${bounds.maxLon});
-          node["highway"="services"](${bounds.minLat},${bounds.minLon},${bounds.maxLat},${bounds.maxLon});
-          way["highway"="services"](${bounds.minLat},${bounds.minLon},${bounds.maxLat},${bounds.maxLon});
-        `;
-      } else if (poiType === "food") {
-        filters = `
-          node["amenity"="restaurant"](${bounds.minLat},${bounds.minLon},${bounds.maxLat},${bounds.maxLon});
-          node["amenity"="fast_food"](${bounds.minLat},${bounds.minLon},${bounds.maxLat},${bounds.maxLon});
-          node["amenity"="cafe"](${bounds.minLat},${bounds.minLon},${bounds.maxLat},${bounds.maxLon});
-          way["amenity"="restaurant"](${bounds.minLat},${bounds.minLon},${bounds.maxLat},${bounds.maxLon});
-          way["amenity"="fast_food"](${bounds.minLat},${bounds.minLon},${bounds.maxLat},${bounds.maxLon});
-          way["amenity"="cafe"](${bounds.minLat},${bounds.minLon},${bounds.maxLat},${bounds.maxLon});
-        `;
-      } else {
-        filters = `
-          node["amenity"="fuel"](${bounds.minLat},${bounds.minLon},${bounds.maxLat},${bounds.maxLon});
-          way["amenity"="fuel"](${bounds.minLat},${bounds.minLon},${bounds.maxLat},${bounds.maxLon});
-          node["highway"="services"](${bounds.minLat},${bounds.minLon},${bounds.maxLat},${bounds.maxLon});
-          way["highway"="services"](${bounds.minLat},${bounds.minLon},${bounds.maxLat},${bounds.maxLon});
-
-          node["amenity"="restaurant"](${bounds.minLat},${bounds.minLon},${bounds.maxLat},${bounds.maxLon});
-          node["amenity"="fast_food"](${bounds.minLat},${bounds.minLon},${bounds.maxLat},${bounds.maxLon});
-          node["amenity"="cafe"](${bounds.minLat},${bounds.minLon},${bounds.maxLat},${bounds.maxLon});
-          way["amenity"="restaurant"](${bounds.minLat},${bounds.minLon},${bounds.maxLat},${bounds.maxLon});
-          way["amenity"="fast_food"](${bounds.minLat},${bounds.minLon},${bounds.maxLat},${bounds.maxLon});
-          way["amenity"="cafe"](${bounds.minLat},${bounds.minLon},${bounds.maxLat},${bounds.maxLon});
-        `;
-      }
-
-      const query = `
-        [out:json][timeout:60];
-        (
-          ${filters}
-        );
-        out center tags;
-      `;
-
-      const res = await fetch("https://overpass-api.de/api/interpreter", {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=UTF-8" },
-        body: query
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error("Erreur Overpass");
-      }
-
-      return data;
-    }
-
-    function normalizePois(data) {
-      const seen = new Set();
-      const pois = [];
-
-      (data.elements || []).forEach(el => {
-        const lat = el.lat ?? el.center?.lat;
-        const lon = el.lon ?? el.center?.lon;
-        if (lat == null || lon == null) return;
-
-        const tags = el.tags || {};
-
-        const isFuel = tags.amenity === "fuel" || tags.highway === "services";
-        const type = isFuel ? "fuel" : "food";
-
-        const name =
-          tags.name ||
-          (type === "fuel" ? "Station-service" : "Restaurant");
-
-        const key = `${type}-${name}-${lat.toFixed(5)}-${lon.toFixed(5)}`;
-        if (seen.has(key)) return;
-        seen.add(key);
-
-        pois.push({
-          lat,
-          lon,
-          type,
-          name,
-          brand: tags.brand || "",
-          cuisine: tags.cuisine || "",
-          opening_hours: tags.opening_hours || "",
-          website: tags.website || "",
-          phone: tags.phone || "",
-          address: [
-            tags["addr:housenumber"],
-            tags["addr:street"],
-            tags["addr:city"]
-          ].filter(Boolean).join(" ")
-        });
-      });
-
-      return pois;
-    }
-
-    function renderPois(pois) {
-      poiLayer.clearLayers();
-      resultsList.innerHTML = "";
-
-      let fuelCount = 0;
-      let foodCount = 0;
-
-      pois.forEach((poi, idx) => {
-        if (poi.type === "fuel") fuelCount++;
-        else foodCount++;
-
-        const icon = poi.type === "fuel" ? fuelIcon : foodIcon;
-
-        const popup = `
-          <div style="min-width:220px">
-            <strong>${escapeHtml(poi.name)}</strong><br>
-            ${poi.type === "fuel" ? "⛽ Station-service" : "🍽️ Restauration"}<br>
-            ${poi.brand ? `Enseigne : ${escapeHtml(poi.brand)}<br>` : ""}
-            ${poi.cuisine ? `Cuisine : ${escapeHtml(poi.cuisine)}<br>` : ""}
-            ${poi.address ? `Adresse : ${escapeHtml(poi.address)}<br>` : ""}
-            ${poi.opening_hours ? `Horaires : ${escapeHtml(poi.opening_hours)}<br>` : ""}
-            ${poi.website ? `<a href="${escapeHtml(poi.website)}" target="_blank" rel="noopener">Site web</a>` : ""}
-          </div>
-        `;
-
-        const marker = L.marker([poi.lat, poi.lon], { icon })
-          .bindPopup(popup)
-          .addTo(poiLayer);
-
-        const li = document.createElement("li");
-        li.className = "result-item";
-        li.innerHTML = `
-          <div class="result-title">
-            <span class="pill ${poi.type === "fuel" ? "pill-fuel" : "pill-food"}">
-              ${poi.type === "fuel" ? "Station" : "Resto"}
-            </span>
-            ${escapeHtml(poi.name)}
-          </div>
-          <div class="result-meta">
-            Distance à la route : ${formatDistance(poi.distanceToRoute)}
-            ${poi.brand ? `<br>Enseigne : ${escapeHtml(poi.brand)}` : ""}
-            ${poi.cuisine ? `<br>Cuisine : ${escapeHtml(poi.cuisine)}` : ""}
-            ${poi.address ? `<br>${escapeHtml(poi.address)}` : ""}
-          </div>
-        `;
-        li.addEventListener("click", () => {
-          map.setView([poi.lat, poi.lon], 15);
-          marker.openPopup();
-        });
-
-        resultsList.appendChild(li);
-      });
-
-      document.getElementById("fuelCount").textContent = String(fuelCount);
-      document.getElementById("foodCount").textContent = String(foodCount);
-
-      if (!pois.length) {
-        resultsList.innerHTML = `
-          <li class="result-item">
-            <div class="result-title">Aucun arrêt trouvé</div>
-            <div class="result-meta">Essaie d’augmenter la distance max depuis la route.</div>
-          </li>
-        `;
-      }
-    }
-
-    // ===============================
-    // ACTIONS
-    // ===============================
-    async function calculateRoute() {
-      const startText = document.getElementById("start").value.trim();
-      const endText = document.getElementById("end").value.trim();
-
-      if (!startText || !endText) {
-        setStatus("Renseigne un départ et une arrivée.", "warn");
-        return;
-      }
-
-      try {
-        setStatus("Géocodage des villes…", "info");
-        const [start, end] = await Promise.all([geocode(startText), geocode(endText)]);
-
-        setStatus("Calcul de l’itinéraire…", "info");
-        const data = await fetchRoute(start, end);
-
-        const feature = data.features[0];
-        routeCoords = feature.geometry.coordinates.map(([lon, lat]) => [lat, lon]);
-        routeSummary = feature.properties.summary;
-
-        if (routeLayer) map.removeLayer(routeLayer);
-        poiLayer.clearLayers();
-        pauseLayer.clearLayers();
-
-        routeLayer = L.polyline(routeCoords, {
-          color: "#1664d1",
-          weight: 5,
-          opacity: 0.9
-        }).addTo(map);
-
-        map.fitBounds(routeLayer.getBounds(), { padding: [20, 20] });
-
-        document.getElementById("distance").textContent = formatDistance(routeSummary.distance);
-        document.getElementById("duration").textContent = formatDuration(routeSummary.duration);
-        document.getElementById("fuelCount").textContent = "0";
-        document.getElementById("foodCount").textContent = "0";
-        resultsList.innerHTML = "";
-
-        routeDistanceMarkers(routeCoords, routeSummary.duration);
-
-        setStatus("Itinéraire tracé. Clique maintenant sur « Trouver les arrêts ».", "ok");
-      } catch (err) {
-        console.error(err);
-        setStatus(err.message || "Erreur lors du calcul de l’itinéraire.", "err");
-      }
-    }
-
-    async function findStops() {
-      if (!routeCoords.length) {
-        setStatus("Trace d’abord un itinéraire.", "warn");
-        return;
-      }
-
-      try {
-        setStatus("Recherche des arrêts le long du trajet…", "info");
-        const bounds = expandBounds(computeBounds(routeCoords), 5000);
-        const raw = await queryPoisInBounds(bounds);
-        const pois = normalizePois(raw);
-
-        const maxDistance = Number(document.getElementById("maxDistance").value);
-        const maxResults = Number(document.getElementById("maxResults").value);
-
-        const filtered = pois
-          .map(poi => ({
-            ...poi,
-            distanceToRoute: distancePointToRouteMeters([poi.lat, poi.lon], routeCoords)
-          }))
-          .filter(poi => poi.distanceToRoute <= maxDistance)
-          .sort((a, b) => a.distanceToRoute - b.distanceToRoute)
-          .slice(0, maxResults);
-
-        renderPois(filtered);
-
-        setStatus(`${filtered.length} arrêt(s) trouvé(s) près du trajet.`, "ok");
-      } catch (err) {
-        console.error(err);
-        setStatus(err.message || "Erreur lors de la recherche des arrêts.", "err");
-      }
-    }
-
-    // ===============================
-    // EVENTS
-    // ===============================
-    document.getElementById("btnRoute").addEventListener("click", calculateRoute);
-    document.getElementById("btnStops").addEventListener("click", findStops);
-    document.getElementById("btnClear").addEventListener("click", clearAll);
-    document.getElementById("btnDemo").addEventListener("click", () => {
-      document.getElementById("start").value = "Paris";
-      document.getElementById("end").value = "Barcelone";
-      setStatus("Démo chargée : Paris → Barcelone. Clique sur « Tracer l’itinéraire ».", "info");
-    });
-  </script>
+
+<div class="sidebar">
+<h2>MiRuta Pro</h2>
+
+<input id="start" value="Paris">
+<input id="end" value="Barcelone">
+
+<select id="pause">
+<option value="0">Sans pause</option>
+<option value="120">Pause 2h</option>
+<option value="180">Pause 3h</option>
+</select>
+
+<button onclick="route()">Itinéraire</button>
+<button onclick="findStops()">Stations & restos</button>
+
+<p id="info"></p>
+</div>
+
+<div id="map"></div>
+
+<script>
+
+// ✅ TON API intégrée
+const API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjZhMmQ3MGMxMDcxZTQ2MDk4MDNkOGQyYTE2ZGZhYTcyIiwiaCI6Im11cm11cjY0In0=";
+
+let map = L.map('map').setView([48.85,2.35],6);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+let routeCoords = [];
+let routeLayer;
+let markers = [];
+
+// =========================
+// GEO
+// =========================
+async function geocode(place){
+ let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${place}`);
+ let data = await res.json();
+ return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+}
+
+// =========================
+// ROUTE
+// =========================
+async function route(){
+
+ let start = await geocode(document.getElementById("start").value);
+ let end = await geocode(document.getElementById("end").value);
+
+ let res = await fetch("https://api.openrouteservice.org/v2/directions/driving-car/geojson",{
+  method:"POST",
+  headers:{
+    "Authorization":API_KEY,
+    "Content-Type":"application/json"
+  },
+  body:JSON.stringify({
+    coordinates:[
+      [start[1],start[0]],
+      [end[1],end[0]]
+    ]
+  })
+ });
+
+ let data = await res.json();
+
+ routeCoords = data.features[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+
+ if(routeLayer) map.removeLayer(routeLayer);
+
+ routeLayer = L.polyline(routeCoords,{color:"blue"}).addTo(map);
+
+ map.fitBounds(routeLayer.getBounds());
+
+ addPauses(data.features[0].properties.summary);
+}
+
+// =========================
+// PAUSES INTELLIGENTES
+// =========================
+function addPauses(summary){
+
+ let pauseTime = Number(document.getElementById("pause").value);
+ if(!pauseTime) return;
+
+ let totalDuration = summary.duration;
+ let totalDist = summary.distance;
+
+ let step = (pauseTime*60/totalDuration)*totalDist;
+
+ let distance=0;
+
+ for(let i=1;i<routeCoords.length;i++){
+   distance += getDistance(routeCoords[i-1],routeCoords[i]);
+
+   if(distance>step){
+     L.marker(routeCoords[i])
+      .addTo(map)
+      .bindPopup("Pause conseillée");
+     step += step;
+   }
+ }
+}
+
+// distance simple
+function getDistance(a,b){
+ let dx = a[0]-b[0];
+ let dy = a[1]-b[1];
+ return Math.sqrt(dx*dx+dy*dy);
+}
+
+// =========================
+// STATIONS
+// =========================
+async function findStops(){
+
+ // clear anciens
+ markers.forEach(m=>map.removeLayer(m));
+ markers=[];
+
+ let points = routeCoords.filter((_,i)=>i%30===0);
+
+ let query = "[out:json];(" +
+  points.map(p=>`node(around:2000,${p[0]},${p[1]})["amenity"~"fuel|restaurant|cafe"];`).join("") +
+  ");out;";
+
+ let res = await fetch("https://overpass-api.de/api/interpreter",{
+  method:"POST",
+  body:query
+ });
+
+ let data = await res.json();
+
+ let list = [];
+
+ data.elements.forEach(e=>{
+  let type = "🍽️";
+  if(e.tags.amenity==="fuel") type="⛽";
+
+  let d = distanceToRoute([e.lat,e.lon]);
+
+  list.push({e,d,type});
+ });
+
+ // tri distance
+ list.sort((a,b)=>a.d-b.d);
+
+ list.slice(0,20).forEach(item=>{
+   let m = L.marker([item.e.lat,item.e.lon]).addTo(map)
+     .bindPopup(item.type+" "+(item.e.tags.name||""));
+
+   markers.push(m);
+ });
+
+ document.getElementById("info").innerHTML =
+  "Stops affichés: "+list.length;
+}
+
+// =========================
+// DISTANCE ROUTE
+// =========================
+function distanceToRoute(point){
+ let min=999999;
+
+ for(let i=0;i<routeCoords.length-1;i++){
+   let d = getDistance(point,routeCoords[i]);
+   if(d<min) min=d;
+ }
+
+ return min;
+}
+
+</script>
+
 </body>
 </html>
+``
