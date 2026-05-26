@@ -2,104 +2,127 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MiRuta</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<!-- ✅ CORRECT Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-body { margin:0; font-family: Arial; }
-#controls { padding:10px; background:#f4f4f4; }
-#map { height:90vh; }
-input, button { padding:8px; margin:5px; }
+body {
+  margin:0;
+  font-family: Arial;
+}
+#controls {
+  padding:10px;
+  background:#f4f4f4;
+}
+#map {
+  height:90vh;
+}
+input, button {
+  padding:8px;
+  margin:5px;
+}
 </style>
 </head>
 
 <body>
 
 <div id="controls">
-<input id="start" placeholder="Départ (ex: Paris)">
-<input id="end" placeholder="Arrivée (ex: Barcelone)">
-<input id="apiKey" placeholder="Clé API OpenRouteService">
-<button onclick="route()">Itinéraire</button>
-<button onclick="findStops()">Stations</button>
+  <input id="start" placeholder="Départ (ex: Paris)">
+  <input id="end" placeholder="Arrivée (ex: Barcelone)">
+  <input id="apiKey" placeholder="Clé API OpenRouteService">
+  <button onclick="route()">Itinéraire</button>
+  <button onclick="findStops()">Stations</button>
 </div>
 
 <div id="map"></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script>
+
 var map = L.map('map').setView([48.85,2.35],6);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  attribution:'© OpenStreetMap'
 }).addTo(map);
 
 let routeLayer;
 let routeCoords = [];
 
 async function geocode(place){
- let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${place}`);
- let data = await res.json();
- return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+  let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${place}`);
+  let data = await res.json();
+  return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
 }
 
 async function route(){
 
- let key = document.getElementById("apiKey").value;
+  let key = document.getElementById("apiKey").value;
 
- if(!key){ alert("Ajoute ta clé API"); return; }
+  if(!key){
+    alert("Ajoute ta clé API");
+    return;
+  }
 
- let start = await geocode(document.getElementById("start").value);
- let end = await geocode(document.getElementById("end").value);
+  let start = await geocode(document.getElementById("start").value);
+  let end = await geocode(document.getElementById("end").value);
 
- let res = await fetch("https://api.openrouteservice.org/v2/directions/driving-car",{
-  method:"POST",
-  headers:{
-    "Authorization":key,
-    "Content-Type":"application/json"
-  },
-  body:JSON.stringify({
-    coordinates:[
-      [start[1],start[0]],
-      [end[1],end[0]]
-    ]
-  })
- });
+  let res = await fetch("https://api.openrouteservice.org/v2/directions/driving-car/geojson",{
+    method:"POST",
+    headers:{
+      "Authorization":key,
+      "Content-Type":"application/json"
+    },
+    body:JSON.stringify({
+      coordinates:[
+        [start[1],start[0]],
+        [end[1],end[0]]
+      ]
+    })
+  });
 
- let data = await res.json();
+  let data = await res.json();
 
- routeCoords = data.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+  // ✅ FIX IMPORTANT ICI
+  let coords = data.features[0].geometry.coordinates.map(c => [c[1],c[0]]);
 
- if(routeLayer) map.removeLayer(routeLayer);
+  if(routeLayer) map.removeLayer(routeLayer);
 
- routeLayer = L.polyline(routeCoords,{color:"blue"}).addTo(map);
+  routeLayer = L.polyline(coords,{color:"blue"}).addTo(map);
 
- map.fitBounds(routeLayer.getBounds());
+  map.fitBounds(routeLayer.getBounds());
+
+  routeCoords = coords;
 }
 
 async function findStops(){
 
- if(routeCoords.length === 0){ alert("Trace un itinéraire d'abord"); return; }
+  if(routeCoords.length === 0){
+    alert("Trace un itinéraire d'abord");
+    return;
+  }
 
- let points = routeCoords.filter((_,i)=>i%30===0);
+  let points = routeCoords.filter((_,i)=>i%30===0);
 
- let query = "[out:json];(" +
-  points.map(p=>`node(around:2000,${p[0]},${p[1]})["amenity"="fuel"];`).join("") +
+  let query = "[out:json];(" +
+    points.map(p=>`node(around:2000,${p[0]},${p[1]})["amenity"="fuel"];`).join("") +
   ");out;";
 
- let res = await fetch("https://overpass-api.de/api/interpreter",{
-  method:"POST",
-  body:query
- });
+  let res = await fetch("https://overpass-api.de/api/interpreter",{
+    method:"POST",
+    body:query
+  });
 
- let data = await res.json();
+  let data = await res.json();
 
- data.elements.forEach(e=>{
-   L.marker([e.lat,e.lon]).addTo(map)
-    .bindPopup("⛽ Station service");
- });
+  data.elements.forEach(e=>{
+    L.marker([e.lat,e.lon]).addTo(map)
+      .bindPopup("⛽ Station service");
+  });
 }
+
 </script>
 
 </body>
