@@ -5,7 +5,8 @@
 <title>MiRuta Pro v5</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="icon" href="data:,">
 
 <style>
 body { margin:0; font-family: Arial; background:#f5f7fb; }
@@ -56,12 +57,6 @@ button {
 <input id="start" value="Paris">
 <input id="end" value="Barcelone">
 
-<select id="pause">
-<option value="0">Sans pause</option>
-<option value="120">Pause 2h</option>
-<option value="180">Pause 3h</option>
-</select>
-
 <button onclick="route()">Tracer itinéraire</button>
 <button onclick="findStops()">Stations</button>
 
@@ -71,7 +66,7 @@ button {
 <div class="stat">Temps <span id="duration">-</span></div>
 </div>
 
-<p id="info"></p>
+<p id="info">Prêt</p>
 
 </div>
 
@@ -108,9 +103,7 @@ async function geocode(place){
 // =========================
 // FORMAT
 // =========================
-function formatDistance(m){
- return (m/1000).toFixed(1)+" km";
-}
+function formatDistance(m){ return (m/1000).toFixed(1)+" km"; }
 function formatTime(s){
  let h = Math.floor(s/3600);
  let m = Math.round((s%3600)/60);
@@ -122,6 +115,8 @@ function formatTime(s){
 // =========================
 async function route(){
 
+ document.getElementById("info").innerHTML = "Calcul en cours...";
+
  let start = await geocode(document.getElementById("start").value);
  let end = await geocode(document.getElementById("end").value);
 
@@ -132,10 +127,7 @@ async function route(){
     "Content-Type":"application/json"
   },
   body:JSON.stringify({
-    coordinates:[
-      [start[1],start[0]],
-      [end[1],end[0]]
-    ]
+    coordinates:[[start[1],start[0]],[end[1],end[0]]]
   })
  });
 
@@ -148,14 +140,13 @@ async function route(){
  routeLayer = L.polyline(routeCoords,{color:"blue"}).addTo(map);
  map.fitBounds(routeLayer.getBounds());
 
- // ✅ résumé affiché à gauche
  document.getElementById("distance").innerHTML =
    formatDistance(data.features[0].properties.summary.distance);
 
  document.getElementById("duration").innerHTML =
    formatTime(data.features[0].properties.summary.duration);
 
- document.getElementById("info").innerHTML = "✅ Route calculée";
+ document.getElementById("info").innerHTML = "✅ Itinéraire OK";
 }
 
 // =========================
@@ -171,12 +162,19 @@ function distanceToRoute(p){
 }
 
 // =========================
-// STOPS STABLE
+// STATIONS (FIABLE)
 // =========================
 async function findStops(){
 
  markers.forEach(m=>map.removeLayer(m));
  markers = [];
+
+ if(routeCoords.length === 0){
+   alert("Trace un itinéraire d'abord");
+   return;
+ }
+
+ document.getElementById("info").innerHTML = "Recherche stations...";
 
  let points = routeCoords.filter((_,i)=>i%80===0);
 
@@ -187,7 +185,7 @@ async function findStops(){
      let query = `
      [out:json][timeout:10];
      (
-       ${points.map(p=>`node(around:900,${p[0]},${p[1]})["amenity"="fuel"];`).join("")}
+       ${points.map(p=>`node(around:1000,${p[0]},${p[1]})["amenity"="fuel"];`).join("")}
      );
      out;
      `;
@@ -195,14 +193,13 @@ async function findStops(){
      let res = await fetch(url,{method:"POST",body:query});
      data = await res.json();
      break;
-
    } catch(e){
      console.log("fallback",url);
    }
  }
 
  if(!data){
-   alert("Serveur stations indisponible");
+   document.getElementById("info").innerHTML = "⚠️ API indisponible";
    return;
  }
 
@@ -216,12 +213,18 @@ async function findStops(){
  list.sort((a,b)=>a.d-b.d);
 
  list.slice(0,8).forEach(item=>{
-   let m = L.marker([item.e.lat,item.e.lon]).addTo(map)
-     .bindPopup("⛽ "+(item.e.tags.name||"Station"));
+   let m = L.marker([item.e.lat,item.e.lon])
+     .addTo(map)
+     .bindPopup("⛽ "+(item.e.tags?.name || "Station"));
    markers.push(m);
  });
 
- document.getElementById("info").innerHTML = "✅ Stations OK";
+ if(markers.length>0){
+   let group = new L.featureGroup(markers);
+   map.fitBounds(group.getBounds());
+ }
+
+ document.getElementById("info").innerHTML = "✅ Stations affichées";
 }
 
 </script>
