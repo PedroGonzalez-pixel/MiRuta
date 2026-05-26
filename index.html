@@ -1,24 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>MiRuta Pro v4</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<link rel="icon" href="data:,">
+
+<style>
+body { margin:0; font-family: Arial; }
+.sidebar {
+  width:300px;
+  height:100vh;
+  float:left;
+  padding:15px;
+  background:#f4f4f4;
+}
+#map {
+  margin-left:300px;
+  height:100vh;
+}
+input, button, select {
+  width:100%;
+  margin-bottom:8px;
+  padding:8px;
+}
+button {
+  background:#007bff;
+  color:white;
+  border:none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+<h2>MiRuta Pro</h2>
+
+<input id="start" value="Paris">
+<input id="end" value="Barcelone">
+
+<select id="pause">
+<option value="0">Sans pause</option>
+<option value="120">Pause 2h</option>
+<option value="180">Pause 3h</option>
+</select>
+
+<button onclick="route()">Itinéraire</button>
+<button onclick="findStops()">Stations & restos</button>
+
+<p id="info"></p>
+</div>
+
+<div id="map"></div>
+
+<script>
+
+// ✅ API intégrée
+const API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjZhMmQ3MGMxMDcxZTQ2MDk4MDNkOGQyYTE2ZGZhYTcyIiwiaCI6Im11cm11cjY0In0=";
+
+let map = L.map('map').setView([48.85,2.35],6);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+let routeCoords = [];
+let routeLayer;
+let markers = [];
+
+// =========================
+// GEO
+// =========================
+async function geocode(place){
+ let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${place}`);
+ let data = await res.json();
+
+ if(!data.length) throw "Ville introuvable";
+
+ return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+}
+
+// =========================
+// ROUTE
+// =========================
+async function route(){
+
+ try {
+
+ let start = await geocode(document.getElementById("start").value);
+ let end = await geocode(document.getElementById("end").value);
+
+ let res = await fetch("https://api.openrouteservice.org/v2/directions/driving-car/geojson",{
+  method:"POST",
+  headers:{
+    "Authorization":API_KEY,
+    "Content-Type":"application/json"
+  },
+  body:JSON.stringify({
+    coordinates:[
+      [start[1],start[0]],
+      [end[1],end[0]]
+    ]
+  })
+ });
+
+ let data = await res.json();
+
+ if(!data.features){
+   alert("Erreur API");
+   return;
+ }
+
+ routeCoords = data.features[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+
+ if(routeLayer) map.removeLayer(routeLayer);
+
+ routeLayer = L.polyline(routeCoords,{color:"blue"}).addTo(map);
+
+ map.fitBounds(routeLayer.getBounds());
+
+ document.getElementById("info").innerHTML = "✅ Route OK";
+
+ } catch(e){
+   alert("Erreur route");
+   console.log(e);
+ }
+
+}
+
+// =========================
+// DISTANCE SIMPLE
+// =========================
+function getDistance(a,b){
+ let dx = a[0]-b[0];
+ let dy = a[1]-b[1];
+ return Math.sqrt(dx*dx+dy*dy);
+}
+
+// =========================
+// DISTANCE ROUTE
+// =========================
+function distanceToRoute(point){
+ let min=999999;
+
+ for(let i=0;i<routeCoords.length;i++){
+   let d = getDistance(point,routeCoords[i]);
+   if(d<min) min=d;
+ }
+
+ return min;
+}
+
+// =========================
+// STATIONS (CORRIGÉE)
+// =========================
 async function findStops(){
 
- // clear anciens markers
- markers.forEach(m=>map.removeLayer(m));
- markers=[];
+ markers.forEach(m => map.removeLayer(m));
+ markers = [];
 
  if(routeCoords.length === 0){
    alert("Trace un itinéraire d'abord");
    return;
  }
 
- // ✅ Moins de points = plus stable
- let points = routeCoords.filter((_,i)=>i%50===0);
+ let points = routeCoords.filter((_, i) => i % 50 === 0);
 
  try {
 
    let query = `
-   [out:json][timeout:25];
+   [out:json][timeout:20];
    (
-     ${points.map(p=>`node(around:1500,${p[0]},${p[1]})["amenity"="fuel"];`).join("")}
-     ${points.map(p=>`node(around:1500,${p[0]},${p[1]})["amenity"="restaurant"];`).join("")}
+     ${points.map(p => `node(around:1500,${p[0]},${p[1]})["amenity"="fuel"];`).join("")}
+     ${points.map(p => `node(around:1500,${p[0]},${p[1]})["amenity"="restaurant"];`).join("")}
    );
    out;
    `;
@@ -36,10 +193,10 @@ async function findStops(){
      if(!e.lat) return;
 
      let d = distanceToRoute([e.lat,e.lon]);
+
      list.push({e,d});
    });
 
-   // tri réel
    list.sort((a,b)=>a.d-b.d);
 
    list.slice(0,15).forEach(item=>{
@@ -52,12 +209,17 @@ async function findStops(){
      markers.push(m);
    });
 
-   document.getElementById("info").innerHTML =
-    "Arrêts affichés: "+Math.min(list.length,15);
+   document.getElementById("info").innerHTML = "✅ Stops affichés : "+Math.min(list.length,15);
 
  } catch(e){
    console.log(e);
-
-   alert("Erreur API Overpass (temporaire). Réessaie dans 5 secondes.");
+   alert("Erreur Overpass (temporaire). Réessaie.");
  }
+
 }
+
+</script>
+
+</body>
+</html>
+``
