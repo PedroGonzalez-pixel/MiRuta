@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MiRuta</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
 body { margin:0; font-family: Arial; }
@@ -18,9 +18,9 @@ input, button { padding:8px; margin:5px; }
 <body>
 
 <div id="controls">
-<input id="start" placeholder="Départ (Paris)">
-<input id="end" placeholder="Arrivée (Barcelone)">
-<input id="apiKey" placeholder="Clé API">
+<input id="start" placeholder="Départ (ex: Paris)">
+<input id="end" placeholder="Arrivée (ex: Barcelone)">
+<input id="apiKey" placeholder="Clé API OpenRouteService">
 <button onclick="route()">Itinéraire</button>
 <button onclick="findStops()">Stations</button>
 </div>
@@ -47,6 +47,8 @@ async function geocode(place){
 async function route(){
 
  let key = document.getElementById("apiKey").value;
+
+ if(!key){ alert("Ajoute ta clé API"); return; }
 
  let start = await geocode(document.getElementById("start").value);
  let end = await geocode(document.getElementById("end").value);
@@ -78,10 +80,12 @@ async function route(){
 
 async function findStops(){
 
+ if(routeCoords.length === 0){ alert("Trace un itinéraire d'abord"); return; }
+
  let points = routeCoords.filter((_,i)=>i%30===0);
 
  let query = "[out:json];(" +
-  points.map(p=>`node(around:2000,${p[0]},${p[1]})['amenity'='fuel'];`).join("") +
+  points.map(p=>`node(around:2000,${p[0]},${p[1]})["amenity"="fuel"];`).join("") +
   ");out;";
 
  let res = await fetch("https://overpass-api.de/api/interpreter",{
@@ -95,7 +99,6 @@ async function findStops(){
    L.marker([e.lat,e.lon]).addTo(map)
     .bindPopup("⛽ Station service");
  });
-
 }
 </script>
 
