@@ -1,169 +1,396 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>MiRuta Pro v5 Stable</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>MiRuta Pro v5</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-https://unpkg.com/leaflet@1.9.4/dist/leaflet.css
+  <!-- favicon vide pour éviter l'erreur 404 -->
+  data:,
 
-<style>
-body { margin:0; font-family:Arial; background:#f5f7fb; }
-.sidebar {
-  width:320px; height:100vh; float:left;
-  padding:15px; background:white;
-  border-right:1px solid #ddd;
-}
-#map { margin-left:320px; height:100vh; }
-input,button { width:100%; margin-bottom:8px; padding:8px; }
-button { background:#007bff; color:white; border:none; }
-.card { padding:10px; background:#fafafa; border:1px solid #ddd; margin-top:10px; }
-.stat { display:flex; justify-content:space-between; }
-</style>
+  <!-- Leaflet correctement chargé -->
+  https://unpkg.com/leaflet@1.9.4/dist/leaflet.css
+  https://unpkg.com/leaflet@1.9.4/dist/leaflet.jsscript>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f5f7fb;
+    }
+
+    .sidebar {
+      width: 320px;
+      height: 100vh;
+      float: left;
+      padding: 15px;
+      background: white;
+      border-right: 1px solid #ddd;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+
+    #map {
+      margin-left: 320px;
+      height: 100vh;
+    }
+
+    input, button, select {
+      width: 100%;
+      margin-bottom: 8px;
+      padding: 10px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+
+    button:hover {
+      background: #0062cc;
+    }
+
+    .card {
+      padding: 12px;
+      background: #fafafa;
+      border: 1px solid #ddd;
+      margin-top: 12px;
+      border-radius: 10px;
+    }
+
+    .stat {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    #info {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #333;
+      line-height: 1.5;
+      min-height: 20px;
+    }
+
+    .results {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      margin-top: 10px;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+
+    .results li {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+
+    .results li:hover {
+      background: #f0f6ff;
+    }
+
+    @media (max-width: 900px) {
+      .sidebar {
+        width: 100%;
+        height: auto;
+        float: none;
+        border-right: none;
+        border-bottom: 1px solid #ddd;
+      }
+
+      #map {
+        margin-left: 0;
+        height: 60vh;
+      }
+    }
+  </style>
 </head>
-
 <body>
 
-<div class="sidebar">
-<h2>MiRuta Pro</h2>
+  <div class="sidebar">
+    <h2>MiRuta Pro</h2>
 
-<input id="start" value="Paris">
-<input id="end" value="Barcelone">
+    <input id="start" value="Paris" placeholder="Départ" />
+    <input id="end" value="Barcelone" placeholder="Arrivée" />
 
-<button onclick="route()">Tracer</button>
-<button onclick="findStops()">Stations</button>
+    <button id="btnRoute">Tracer l’itinéraire</button>
+    <button id="btnStops">Trouver les stations</button>
+    <button id="btnClear">Effacer</button>
 
-<div class="card">
-<div class="stat">Distance <span id="distance">-</span></div>
-<div class="stat">Temps <span id="duration">-</span></div>
-</div>
+    <div class="card">
+      <strong>Résumé de l’itinéraire</strong>
+      <div class="stat">Distance <span id="distance">-</span></div>
+      <div class="stat">Temps <span id="duration">-</span></div>
+      <div class="stat">Stations trouvées <span id="stationsCount">0</span></div>
+    </div>
 
-<p id="info">Prêt</p>
+    <div id="info">Prêt</div>
 
-</div>
+    <ul id="results" class="results"></ul>
+  </div>
 
-<div id="map"></div>
+  <div id="map"></div>
 
-https://unpkg.com/leaflet@1.9.4/dist/leaflet.jsscript>
+  <script>
+    // =========================
+    // CONFIG
+    // =========================
+    const API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjZhMmQ3MGMxMDcxZTQ2MDk4MDNkOGQyYTE2ZGZhYTcyIiwiaCI6Im11cm11cjY0In0=";
 
-<script>
+    const OVERPASS_ENDPOINTS = [
+      "https://overpass.kumi.systems/api/interpreter",
+      "https://overpass-api.de/api/interpreter"
+    ];
 
-// ✅ API
-const API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjZhMmQ3MGMxMDcxZTQ2MDk4MDNkOGQyYTE2ZGZhYTcyIiwiaCI6Im11cm11cjY0In0=";
+    // =========================
+    // MAP
+    // =========================
+    const map = L.map("map").setView([48.85, 2.35], 6);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
 
-let map = L.map('map').setView([48.85,2.35],6);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    // =========================
+    // STATE
+    // =========================
+    let routeCoords = [];
+    let routeLayer = null;
+    let stationMarkers = [];
 
-let routeCoords = [];
-let routeLayer;
-let markers = [];
+    // =========================
+    // HELPERS
+    // =========================
+    function setInfo(msg) {
+      document.getElementById("info").innerHTML = msg;
+    }
 
-async function geocode(place){
- let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${place}`);
- let d = await res.json();
- return [parseFloat(d[0].lat), parseFloat(d[0].lon)];
-}
+    function formatDistance(meters) {
+      return (meters / 1000).toFixed(1) + " km";
+    }
 
-function formatDistance(m){ return (m/1000).toFixed(1)+" km"; }
-function formatTime(s){ return Math.floor(s/3600)+"h "+Math.round((s%3600)/60)+"m"; }
+    function formatTime(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.round((seconds % 3600) / 60);
+      return h + "h " + m + "m";
+    }
 
-async function route(){
+    async function geocode(place) {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place)}`
+      );
+      const data = await res.json();
 
- document.getElementById("info").innerHTML="Calcul...";
+      if (!data.length) {
+        throw new Error("Ville introuvable : " + place);
+      }
 
- let s = await geocode(start.value);
- let e = await geocode(end.value);
+      return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+    }
 
- let r = await fetch("https://api.openrouteservice.org/v2/directions/driving-car/geojson",{
-   method:"POST",
-   headers:{Authorization:API_KEY,"Content-Type":"application/json"},
-   body:JSON.stringify({coordinates:[[s[1],s[0]],[e[1],e[0]]]})
- });
+    function clearStations() {
+      stationMarkers.forEach(marker => map.removeLayer(marker));
+      stationMarkers = [];
+      document.getElementById("results").innerHTML = "";
+      document.getElementById("stationsCount").textContent = "0";
+    }
 
- let data = await r.json();
+    function distanceToRoute(point) {
+      let min = Infinity;
 
- routeCoords = data.features[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+      for (const r of routeCoords) {
+        const d = Math.sqrt(
+          Math.pow(point[0] - r[0], 2) + Math.pow(point[1] - r[1], 2)
+        );
+        if (d < min) min = d;
+      }
 
- if(routeLayer) map.removeLayer(routeLayer);
+      return min;
+    }
 
- routeLayer = L.polyline(routeCoords,{color:"blue"}).addTo(map);
- map.fitBounds(routeLayer.getBounds());
+    // =========================
+    // ROUTE
+    // =========================
+    async function route() {
+      try {
+        setInfo("Calcul de l’itinéraire en cours...");
+        clearStations();
 
- distance.innerHTML = formatDistance(data.features[0].properties.summary.distance);
- duration.innerHTML = formatTime(data.features[0].properties.summary.duration);
+        const start = await geocode(document.getElementById("start").value);
+        const end = await geocode(document.getElementById("end").value);
 
- info.innerHTML="✅ Route OK";
-}
+        const res = await fetch(
+          "https://api.openrouteservice.org/v2/directions/driving-car/geojson",
+          {
+            method: "POST",
+            headers: {
+              "Authorization": API_KEY,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              coordinates: [
+                [start[1], start[0]],
+                [end[1], end[0]]
+              ]
+            })
+          }
+        );
 
-// ✅ DISTANCE
-function distanceToRoute(p){
- let min=999999;
- routeCoords.forEach(r=>{
-  let d=Math.sqrt((p[0]-r[0])**2+(p[1]-r[1])**2);
-  if(d<min) min=d;
- });
- return min;
-}
+        const data = await res.json();
 
-// ✅ VERSION STABLE (AVEC FALLBACK FAKE SI OVERPASS FAIL)
-async function findStops(){
+        if (!data.features || !data.features.length) {
+          throw new Error("Aucun itinéraire trouvé.");
+        }
 
- markers.forEach(m=>map.removeLayer(m));
- markers=[];
+        routeCoords = data.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
 
- if(routeCoords.length===0){
-   alert("Fais la route d'abord");
-   return;
- }
+        if (routeLayer) {
+          map.removeLayer(routeLayer);
+        }
 
- info.innerHTML="Recherche stations...";
+        routeLayer = L.polyline(routeCoords, { color: "blue", weight: 5 }).addTo(map);
+        map.fitBounds(routeLayer.getBounds());
 
- try {
+        const summary = data.features[0].properties.summary;
 
-   // ✅ TEST rapide : stations simulées si API instable
-   if(Math.random()<0.5){
-     throw "force fallback";
-   }
+        document.getElementById("distance").textContent = formatDistance(summary.distance);
+        document.getElementById("duration").textContent = formatTime(summary.duration);
 
-   let pts = routeCoords.filter((_,i)=>i%80===0);
+        setInfo("✅ Itinéraire calculé");
+      } catch (e) {
+        console.error(e);
+        setInfo("❌ Erreur itinéraire : " + e.message);
+      }
+    }
 
-   let query = `[out:json];(${pts.map(p=>`node(around:1000,${p[0]},${p[1]})["amenity"="fuel"];`).join("")});out;`;
+    // =========================
+    // STATIONS
+    // =========================
+    async function findStops() {
+      try {
+        clearStations();
 
-   let res = await fetch("https://overpass.kumi.systems/api/interpreter",{method:"POST",body:query});
-   let data = await res.json();
+        if (!routeCoords.length) {
+          setInfo("⚠️ Trace d’abord un itinéraire");
+          return;
+        }
 
-   let list=[];
+        setInfo("Recherche des stations...");
 
-   data.elements.forEach(e=>{
-     list.push({e,d:distanceToRoute([e.lat,e.lon])});
-   });
+        const points = routeCoords.filter((_, i) => i % 80 === 0);
 
-   list.sort((a,b)=>a.d-b.d);
+        let data = null;
 
-   list.slice(0,6).forEach(x=>{
-     let m=L.marker([x.e.lat,x.e.lon]).addTo(map).bindPopup("⛽ Station");
-     markers.push(m);
-   });
+        for (const endpoint of OVERPASS_ENDPOINTS) {
+          try {
+            const query = `
+[out:json][timeout:10];
+(
+  ${points.map(p => `node(around:1000,${p[0]},${p[1]})["amenity"="fuel"];`).join("")}
+);
+out;
+            `.trim();
 
-   info.innerHTML="✅ Stations trouvées";
+            const res = await fetch(endpoint, {
+              method: "POST",
+              body: query
+            });
 
- } catch(e){
+            data = await res.json();
 
-   console.log("fallback activé");
+            if (data && data.elements) {
+              break;
+            }
+          } catch (err) {
+            console.log("Overpass fallback:", endpoint, err);
+          }
+        }
 
-   // ✅ fallback fiable (fake data proche route)
-   for(let i=0;i<5;i++){
-     let p=routeCoords[Math.floor(Math.random()*routeCoords.length)];
+        if (!data || !data.elements || data.elements.length === 0) {
+          setInfo("⚠️ Aucune station trouvée ou service indisponible");
+          return;
+        }
 
-     let m=L.marker(p).addTo(map).bindPopup("⛽ Station (approx)");
-     markers.push(m);
-   }
+        const list = [];
 
-   info.innerHTML="⚠️ Mode fallback (API HS)";
- }
+        data.elements.forEach(e => {
+          if (!e.lat || !e.lon) return;
+          const d = distanceToRoute([e.lat, e.lon]);
+          list.push({ e, d });
+        });
 
-}
-</script>
+        list.sort((a, b) => a.d - b.d);
 
+        const results = document.getElementById("results");
+        const selected = list.slice(0, 8);
+
+        selected.forEach(item => {
+          const marker = L.marker([item.e.lat, item.e.lon])
+            .addTo(map)
+            .bindPopup("⛽ " + (item.e.tags?.name || "Station-service"));
+
+          stationMarkers.push(marker);
+
+          const li = document.createElement("li");
+          li.innerHTML = `
+            <strong>${item.e.tags?.name || "Station-service"}</strong><br>
+            Proximité de la route : ${item.d.toFixed(4)}
+          `;
+          li.addEventListener("click", () => {
+            map.setView([item.e.lat, item.e.lon], 15);
+            marker.openPopup();
+          });
+
+          results.appendChild(li);
+        });
+
+        document.getElementById("stationsCount").textContent = selected.length;
+
+        if (stationMarkers.length > 0) {
+          const group = L.featureGroup(stationMarkers);
+          map.fitBounds(group.getBounds().pad(0.2));
+        }
+
+        setInfo("✅ Stations affichées");
+      } catch (e) {
+        console.error(e);
+        setInfo("❌ Erreur stations : " + e.message);
+      }
+    }
+
+    // =========================
+    // CLEAR
+    // =========================
+    function clearAll() {
+      clearStations();
+
+      if (routeLayer) {
+        map.removeLayer(routeLayer);
+        routeLayer = null;
+      }
+
+      routeCoords = [];
+      document.getElementById("distance").textContent = "-";
+      document.getElementById("duration").textContent = "-";
+      setInfo("Prêt");
+    }
+
+    // =========================
+    // EVENTS
+    // =========================
+    document.getElementById("btnRoute").addEventListener("click", route);
+    document.getElementById("btnStops").addEventListener("click", findStops);
+    document.getElementById("btnClear").addEventListener("click", clearAll);
+  </script>
 </body>
 </html>
