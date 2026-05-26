@@ -1,116 +1,106 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>RutaStop</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>MiRuta</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-    }
-
-    #controls {
-      padding: 10px;
-      background: #f4f4f4;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    input {
-      padding: 8px;
-      width: 200px;
-    }
-
-    button {
-      padding: 8px 12px;
-      background: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-
-    #map {
-      height: calc(100vh - 60px);
-    }
-  </style>
+<style>
+body { margin:0; font-family: Arial; }
+#controls { padding:10px; background:#f4f4f4; }
+#map { height:90vh; }
+input, button { padding:8px; margin:5px; }
+</style>
 </head>
 
 <body>
 
 <div id="controls">
-  <input id="start" placeholder="Départ (ex: Paris)">
-  <input id="end" placeholder="Arrivée (ex: Barcelone)">
-  <button onclick="calculateRoute()">Calculer</button>
+<input id="start" placeholder="Départ">
+<input id="end" placeholder="Arrivée">
+<input id="apiKey" placeholder="Clé API OpenRouteService">
+<button onclick="route()">Itinéraire</button>
+<button onclick="findStops()">Arrêts</button>
 </div>
 
 <div id="map"></div>
 
-<!-- Leaflet JS -->
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-  // Initialisation carte
-  var map = L.map('map').setView([48.8566, 2.3522], 6);
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
-  }).addTo(map);
+var map = L.map('map').setView([48.85,2.35],6);
 
-  var routeLayer;
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+}).addTo(map);
 
-  // Fonction géocodage via Nominatim (gratuit)
-  async function geocode(place) {
-    let url = `https://nominatim.openstreetmap.org/search?format=json&q=${place}`;
-    let response = await fetch(url);
-    let data = await response.json();
-    return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-  }
+let routeLayer;
+let routeCoords = [];
 
-  // Fonction calcul route
-  async function calculateRoute() {
-    let start = document.getElementById("start").value;
-    let end = document.getElementById("end").value;
+async function geocode(place){
+ let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${place}`);
+ let data = await res.json();
+ return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+}
 
-    let startCoords = await geocode(start);
-    let endCoords = await geocode(end);
+async function route(){
 
-    // OpenRouteService (clé gratuite à ajouter)
-    let apiKey = "VOTRE_API_KEY_ICI";
+ let key = document.getElementById("apiKey").value;
 
-    let url = `https://api.openrouteservice.org/v2/directions/driving-car`;
+ let start = await geocode(document.getElementById("start").value);
+ let end = await geocode(document.getElementById("end").value);
 
-    let response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Authorization": apiKey,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        coordinates: [
-          [startCoords[1], startCoords[0]],
-          [endCoords[1], endCoords[0]]
-        ]
-      })
-    });
+ let res = await fetch("https://api.openrouteservice.org/v2/directions/driving-car",{
+  method:"POST",
+  headers:{
+    "Authorization":key,
+    "Content-Type":"application/json"
+  },
+  body:JSON.stringify({
+    coordinates:[
+      [start[1],start[0]],
+      [end[1],end[0]]
+    ]
+  })
+ });
 
-    let data = await response.json();
+ let data = await res.json();
 
-    let coords = data.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
+ routeCoords = data.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
 
-    if (routeLayer) {
-      map.removeLayer(routeLayer);
-    }
+ if(routeLayer) map.removeLayer(routeLayer);
 
-    routeLayer = L.polyline(coords, {color: "blue"}).addTo(map);
+ routeLayer = L.polyline(routeCoords,{color:"blue"}).addTo(map);
 
-    map.fitBounds(routeLayer.getBounds());
-  }
+ map.fitBounds(routeLayer.getBounds());
+}
+
+async function findStops(){
+
+ alert("Version simple : recherche en cours...");
+
+ let points = routeCoords.filter((_,i)=>i%30===0);
+
+ let query = "[out:json];(" +
+  points.map(p=>`node(around:2000,${p[0]},${p[1]})["amenity"="fuel"];`).join("") +
+  ");out;";
+
+ let res = await fetch("https://overpass-api.de/api/interpreter",{
+  method:"POST",
+  body:query
+ });
+
+ let data = await res.json();
+
+ data.elements.forEach(e=>{
+   L.marker([e.lat,e.lon]).addTo(map)
+    .bindPopup("⛽ Station service");
+ });
+
+}
+
 </script>
 
 </body>
