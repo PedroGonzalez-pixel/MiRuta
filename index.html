@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8"/>
-<title>AutoRoute · Planificateur de voyage</title>
+<title>MiRuta v1.4</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -124,6 +124,14 @@ select option{background:var(--surface2);}
 .leaflet-popup-tip{background:var(--surface) !important;}
 .leaflet-popup-close-button{color:var(--text2) !important;top:6px !important;right:8px !important;}
 
+/* ── COLLAPSIBLE PANEL ── */
+.panel-body{overflow:hidden;transition:max-height 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.3s;max-height:600px;opacity:1;}
+.panel-body.collapsed{max-height:0;opacity:0;pointer-events:none;}
+.collapse-btn{background:none;border:none;cursor:pointer;padding:0;color:var(--text3);line-height:1;transition:color 0.15s,transform 0.3s;display:flex;align-items:center;}
+.collapse-btn:hover{color:var(--accent);}
+.collapse-btn.collapsed svg{transform:rotate(-90deg);}
+.collapse-btn svg{transition:transform 0.3s;width:16px;height:16px;}
+
 @media(max-width:800px){
   body{flex-direction:column;}
   .sidebar{width:100%;min-width:unset;height:auto;max-height:60vh;}
@@ -139,9 +147,13 @@ select option{background:var(--surface2);}
       <div class="logo-icon">
         <svg viewBox="0 0 24 24"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
       </div>
-      <div><h1>AutoRoute</h1><span>Planificateur de voyage</span></div>
+      <div style="flex:1"><h1>MiRuta</h1><span>Planificateur de voyage &nbsp;<strong style="color:var(--accent);font-weight:600">v1.4</strong></span></div>
+      <button class="collapse-btn" id="btnCollapse" title="Réduire / agrandir">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+      </button>
     </div>
 
+  <div class="panel-body" id="panelBody">
     <div class="input-wrap">
       <svg class="input-icon" viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><circle cx="8" cy="8" r="3"/><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 1a6 6 0 1 1 0 12A6 6 0 0 1 8 2z"/></svg>
       <input type="text" id="start" placeholder="Départ…" value="Paris"/>
@@ -198,7 +210,10 @@ select option{background:var(--surface2);}
 
   <!-- FILTERS -->
   <div class="filter-section">
-    <span class="field-label" style="margin-bottom:8px">Types d'arrêts</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <span class="field-label" style="margin-bottom:0">Types d'arrêts</span>
+      <button id="btnResetFilters" style="background:none;border:none;cursor:pointer;font-size:10px;font-weight:600;color:var(--text3);font-family:'DM Sans',sans-serif;letter-spacing:0.5px;padding:2px 6px;border-radius:6px;text-transform:uppercase;transition:color 0.15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text3)'">↺ Reset</button>
+    </div>
     <div class="chips">
       <div class="chip active" data-filter="fuel">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1.5v5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V9c0-.69-.28-1.32-.73-1.77zM18 10c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zM8 18v-4.5H6L10 7v4.5h2L8 18z"/></svg>
@@ -214,6 +229,8 @@ select option{background:var(--surface2);}
       </div>
     </div>
   </div>
+
+  </div><!-- /panel-body -->
 
   <!-- STATS -->
   <div class="stats-bar">
@@ -276,43 +293,43 @@ async function geocode(q){
   return [parseFloat(d[0].lat),parseFloat(d[0].lon)];
 }
 
-// Reverse geocode a coordinate to get a town name
-async function reverseGeocode(lat,lon){
-  try{
-    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
-      {headers:{"Accept-Language":"fr"}});
-    const d=await r.json();
-    return d.address?.city||d.address?.town||d.address?.village||d.address?.municipality||d.display_name?.split(",")[0]||"";
-  }catch{return "";}
-}
+const OVERPASS_URLS=[
+  "https://overpass.private.coffee/api/interpreter",
+  "https://lz4.overpass-api.de/api/interpreter",
+  "https://overpass.openstreetmap.ru/api/interpreter"
+];
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
-// Search nearby POIs using Nominatim (fast, no CORS issues)
-async function searchNearby(lat,lon,type){
-  // type: "fuel" | "food" | "rest"
-  const queries={
-    fuel:[["amenity","fuel"]],
-    food:[["amenity","restaurant"],["amenity","fast_food"],["amenity","cafe"]],
-    rest:[["highway","rest_area"],["highway","services"],["amenity","parking"]]
-  };
-  const pairs=queries[type]||[];
-  const results=[];
-  // Use Nominatim search around the point for each tag pair
-  for(const [k,v] of pairs){
+// Single Overpass query per stop — all types in one round-trip
+async function searchStopPOIs(lat,lon,filters){
+  const R=3000;
+  const c=lat.toFixed(5)+","+lon.toFixed(5);
+  const parts=[];
+  if(filters.has("fuel"))  parts.push(`node(around:${R},${c})["amenity"="fuel"];`);
+  if(filters.has("food"))  parts.push(
+    `node(around:${R},${c})["amenity"="restaurant"];`,
+    `node(around:${R},${c})["amenity"="fast_food"];`,
+    `node(around:${R},${c})["amenity"="cafe"];`
+  );
+  if(filters.has("rest"))  parts.push(
+    `node(around:${R},${c})["highway"="rest_area"];`,
+    `node(around:${R},${c})["highway"="services"];`,
+    `way(around:${R},${c})["highway"="services"];`
+  );
+  if(!parts.length) return [];
+  const q="[out:json][timeout:12];(\n"+parts.join("\n")+"\n);out center 30;";
+  for(const ep of OVERPASS_URLS){
     try{
-      const url=`https://nominatim.openstreetmap.org/search?format=json&limit=3&${k}=${encodeURIComponent(v)}&lat=${lat}&lon=${lon}&radius=5000&bounded=0`;
-      const r=await fetch(url,{headers:{"Accept-Language":"fr"}});
+      const ctrl=new AbortController();
+      const tid=setTimeout(()=>ctrl.abort(),11000);
+      const r=await fetch(ep,{method:"POST",body:q,signal:ctrl.signal});
+      clearTimeout(tid);
+      if(!r.ok) throw new Error("HTTP "+r.status);
       const d=await r.json();
-      d.forEach(item=>{
-        results.push({
-          lat:parseFloat(item.lat),lon:parseFloat(item.lon),
-          name:item.display_name.split(",")[0],
-          address:item.display_name.split(",").slice(1,3).join(",").trim(),
-          type, k, v
-        });
-      });
-    }catch(e){console.warn("Nominatim err",e);}
+      if(d?.elements) return d.elements;
+    }catch(e){console.warn("Overpass",ep,e.message);}
   }
-  return results;
+  return [];
 }
 
 // Get coord at a given fraction along the route polyline
@@ -385,7 +402,6 @@ async function calcRoute(){
 async function planStops(){
   if(!routeCoords.length){setStatus("Tracez d'abord un itinéraire","error");return;}
 
-  // Clear old stop markers
   markers.slice(2).forEach(m=>map.removeLayer(m));
   markers=markers.slice(0,2);
   allStops=[];
@@ -397,79 +413,81 @@ async function planStops(){
   const lunchSnap=document.getElementById("lunchSnap").checked;
   const totalMin=Math.round(routeDurationSec/60);
 
-  // Build list of stop times (in minutes from departure)
-  const stopTimes=[]; // minutes from departure
-  if(intervalMin>0){
-    for(let t=intervalMin; t<totalMin-20; t+=intervalMin) stopTimes.push(t);
-  } else {
-    // Auto: every 2h
-    for(let t=120; t<totalMin-20; t+=120) stopTimes.push(t);
-  }
+  // Build stop times (minutes from departure)
+  const stopTimes=[];
+  const iv=intervalMin>0?intervalMin:120;
+  for(let t=iv;t<totalMin-15;t+=iv) stopTimes.push(t);
 
-  // Lunch snap: find the stop closest to 12h-14h window, or insert one
+  // Lunch snap: insert a stop if nothing falls between 12h and 14h
   if(lunchSnap){
     const [dh,dm]=departTime.split(":").map(Number);
-    const departMin=dh*60+dm;
-    const lunch12=12*60-departMin;
-    const lunch14=14*60-departMin;
-    // Check if any stop already falls in [lunch12, lunch14]
-    const hasLunch=stopTimes.some(t=>t>=lunch12&&t<=lunch14);
-    if(!hasLunch && lunch12>0 && lunch12<totalMin){
-      // Insert at 12h30 relative to depart
-      const lunchAt=Math.max(lunch12, Math.min(lunch14, lunch12+30));
-      if(lunchAt>0 && lunchAt<totalMin) stopTimes.push(lunchAt);
+    const depMin=dh*60+dm;
+    const w12=12*60-depMin, w14=14*60-depMin;
+    const hasLunch=stopTimes.some(t=>t>=w12&&t<=w14);
+    if(!hasLunch&&w12>15&&w12<totalMin-15){
+      stopTimes.push(Math.min(w14,w12+30));
+      stopTimes.sort((a,b)=>a-b);
     }
-    stopTimes.sort((a,b)=>a-b);
   }
 
   if(!stopTimes.length){
-    setStatus("Le trajet est trop court pour des arrêts planifiés","error");return;
+    setStatus("Trajet trop court pour des arrêts","error");return;
   }
 
-  setStatus(`Recherche de ${stopTimes.length} points d'arrêt…`,"loading");
-
-  // For each stop time, get route coord at that fraction and search nearby
+  document.getElementById("btnStops").disabled=true;
   const stopData=[];
-  let searchCount=0;
-  for(const t of stopTimes){
-    const frac=t/totalMin;
+
+  for(let i=0;i<stopTimes.length;i++){
+    const t=stopTimes[i];
+    const frac=Math.min(t/totalMin,0.98);
     const coord=coordAtFraction(frac);
     const eta=addMinutes(departTime,t);
-
-    // Determine which types to search
     const [dh,dm]=departTime.split(":").map(Number);
-    const absMin=(dh*60+dm+t)%(24*60);
-    const absH=absMin/60;
-    // At lunch window, prefer food
+    const absH=((dh*60+dm+t)%(1440))/60;
     const isLunch=absH>=12&&absH<=14;
-    const typesToSearch=[...activeFilters];
 
-    setStatus(`Recherche arrêt ${++searchCount}/${stopTimes.length} (ETA ${eta})…`,"loading");
+    setStatus(`Arrêt ${i+1}/${stopTimes.length} — recherche à ${eta}…`,"loading");
 
-    // Run all type searches in parallel for this waypoint
-    const searches=typesToSearch.map(type=>searchNearby(coord[0],coord[1],type));
-    const results=await Promise.all(searches);
-    const flat=results.flat();
+    const elements=await searchStopPOIs(coord[0],coord[1],activeFilters);
+    await sleep(600); // respect rate limit between stops
 
-    // Pick best per type (closest to waypoint, prefer named ones)
+    // Classify elements and pick best per type
     const byType={};
-    for(const r of flat){
-      const dist=Math.sqrt((r.lat-coord[0])**2+(r.lon-coord[1])**2)*111000;
-      r.distM=dist;
-      if(!byType[r.type]||dist<byType[r.type].distM) byType[r.type]=r;
+    for(const e of elements){
+      const lat=e.lat??(e.center?.lat);
+      const lon=e.lon??(e.center?.lon);
+      if(!lat||!lon) continue;
+      const am=e.tags?.amenity||"";
+      const hw=e.tags?.highway||"";
+      let type=null,label="";
+      if(am==="fuel"&&activeFilters.has("fuel"))             {type="fuel";label="Station-service";}
+      else if(["restaurant","fast_food","cafe"].includes(am)&&activeFilters.has("food")){
+        type="food";
+        label=am==="fast_food"?"Restauration rapide":am==="cafe"?"Café":"Restaurant";
+      }
+      else if(["rest_area","services"].includes(hw)&&activeFilters.has("rest")){
+        type="rest";label="Aire "+(hw==="services"?"de services":"de repos");
+      }
+      if(!type) continue;
+      const name=e.tags?.name||(e.tags?.brand)||label;
+      const brand=e.tags?.brand||"";
+      const dist=Math.sqrt((lat-coord[0])**2+(lon-coord[1])**2)*111000;
+      const poi={lat,lon,name,brand,label,type,distM:Math.round(dist)};
+      if(!byType[type]||dist<byType[type].distM) byType[type]=poi;
     }
 
-    stopData.push({t,frac,coord,eta,isLunch,byType});
+    stopData.push({t,coord,eta,isLunch,byType});
   }
 
+  document.getElementById("btnStops").disabled=false;
   allStops=stopData;
-  renderStops(departTime,totalMin);
+  renderStops();
   document.getElementById("stopsCount").textContent=stopTimes.length;
-  setStatus(`${stopTimes.length} arrêts planifiés sur le trajet`,"ok");
+  setStatus(`${stopTimes.length} arrêt${stopTimes.length>1?"s":""} planifié${stopTimes.length>1?"s":""}  ✓`,"ok");
 }
 
 // ── RENDER STOPS ─────────────────────────────────────
-function renderStops(departTime,totalMin){
+function renderStops(){
   markers.slice(2).forEach(m=>map.removeLayer(m));
   markers=markers.slice(0,2);
 
@@ -481,61 +499,55 @@ function renderStops(departTime,totalMin){
   document.getElementById("resultsCount").textContent=allStops.length+" arrêt"+(allStops.length>1?"s":"");
 
   allStops.forEach((stop,idx)=>{
-    // Group header
+    // ── Group header
     const gh=document.createElement("div");
     gh.className="stop-group-header";
-    gh.textContent=`Arrêt ${idx+1} · ${stop.eta}${stop.isLunch?" 🍽 Déjeuner":""}`;
+    gh.textContent="Arrêt "+(idx+1)+" · "+stop.eta+(stop.isLunch?" 🍽 Déjeuner":"");
     list.appendChild(gh);
 
-    // One card per found type
-    const types=Object.values(stop.byType);
-    if(!types.length){
+    const pois=Object.values(stop.byType);
+
+    if(!pois.length){
       const empty=document.createElement("div");
-      empty.className="result-card";
-      empty.style.opacity="0.5";
-      empty.innerHTML=`<div class="rc-name">Aucun établissement trouvé à ce point</div>`;
+      empty.className="result-card"; empty.style.opacity="0.5";
+      empty.innerHTML='<div class="rc-name">Aucun établissement trouvé ici</div>';
       list.appendChild(empty);
-      // Still place a waypoint marker
       const mk=L.marker(stop.coord,{icon:makeIcon("rest",idx+1)}).addTo(map)
         .bindPopup(`<div class="popup-inner"><div class="popup-name">Point d'arrêt ${idx+1}</div><div class="popup-eta">ETA : ${stop.eta}</div></div>`);
       markers.push(mk);
       return;
     }
 
-    types.forEach((poi,pi)=>{
-      const typeLabels={fuel:"Station-service",food:"Restauration",rest:"Aire de repos"};
-      const label=typeLabels[poi.type]||poi.type;
+    // Place one map marker per stop (first POI)
+    const main=pois[0];
+    const mk=L.marker([main.lat,main.lon],{icon:makeIcon(main.type,idx+1)}).addTo(map)
+      .bindPopup(`<div class="popup-inner">
+        <div class="popup-name">${main.name}</div>
+        <div class="popup-type">${main.label}${main.brand&&main.brand!==main.name?" · "+main.brand:""}</div>
+        <div class="popup-eta">ETA : ${stop.eta}</div>
+      </div>`);
+    markers.push(mk);
 
-      // Place marker only for first POI of each stop
-      if(pi===0){
-        const mk=L.marker([poi.lat,poi.lon],{icon:makeIcon(poi.type,idx+1)}).addTo(map)
-          .bindPopup(`<div class="popup-inner">
-            <div class="popup-name">${poi.name}</div>
-            <div class="popup-type">${label}</div>
-            <div class="popup-eta">ETA : ${stop.eta}</div>
-          </div>`);
-        markers.push(mk);
-      }
-
+    // One card per POI type found
+    pois.forEach(poi=>{
       const card=document.createElement("div");
       card.className="result-card";
       card.innerHTML=`
         <div class="rc-top">
           <div class="rc-name">${poi.name}</div>
-          <div class="rc-badge badge-${poi.type}">${label}</div>
+          <div class="rc-badge badge-${poi.type}">${poi.label}</div>
         </div>
         <div class="rc-time">⏱ ${stop.eta}</div>
         <div class="rc-details">
+          ${poi.brand&&poi.brand!==poi.name?`<div class="rc-detail"><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1" fill="none"/><text x="8" y="12" text-anchor="middle" font-size="9" fill="currentColor">B</text></svg>${poi.brand}</div>`:""}
           <div class="rc-detail">
             <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
-            ${poi.address||"Sur le trajet"}
+            ${poi.distM} m de l'axe
           </div>
-          ${poi.distM?`<div class="rc-detail"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 0a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4.5a.5.5 0 0 0 0-1H1.5V1H5v1.5a.5.5 0 0 0 .5.5H8a.5.5 0 0 0 .5-.5V1h6.5v12.5H14a.5.5 0 0 0 0 1H15a1 1 0 0 0 1-1V1a1 1 0 0 0-1-1H1z"/></svg>${Math.round(poi.distM)} m de l'axe</div>`:""}
-        </div>
-      `;
+        </div>`;
       card.addEventListener("click",()=>{
         map.setView([poi.lat,poi.lon],15,{animate:true});
-        markers.find(m=>m.getLatLng&&Math.abs(m.getLatLng().lat-poi.lat)<0.0001)?.openPopup();
+        mk.openPopup();
         document.querySelectorAll(".result-card").forEach(c=>c.classList.remove("highlighted"));
         card.classList.add("highlighted");
       });
@@ -570,6 +582,26 @@ document.querySelectorAll(".chip").forEach(chip=>{
 document.getElementById("btnRoute").addEventListener("click",calcRoute);
 document.getElementById("btnStops").addEventListener("click",planStops);
 document.getElementById("btnClear").addEventListener("click",clearAll);
+
+// ── COLLAPSE PANEL ────────────────────────────────────
+const btnCollapse=document.getElementById("btnCollapse");
+const panelBody=document.getElementById("panelBody");
+let panelOpen=true;
+btnCollapse.addEventListener("click",()=>{
+  panelOpen=!panelOpen;
+  panelBody.classList.toggle("collapsed",!panelOpen);
+  btnCollapse.classList.toggle("collapsed",!panelOpen);
+  // Trigger map resize after transition
+  setTimeout(()=>map.invalidateSize(),360);
+});
+
+// ── RESET FILTERS ─────────────────────────────────────
+document.getElementById("btnResetFilters").addEventListener("click",()=>{
+  activeFilters=new Set(["fuel","food","rest"]);
+  document.querySelectorAll(".chip").forEach(c=>{
+    c.classList.add("active");
+  });
+});
 </script>
 </body>
 </html>
