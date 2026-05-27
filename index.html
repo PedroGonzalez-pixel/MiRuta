@@ -7,496 +7,234 @@
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-
 :root{
-  --bg:#0d0f14;
-  --bg2:#13161d;
-  --bg3:#1a1e28;
-  --surface:#1f2330;
-  --surface2:#252a38;
-  --border:rgba(255,255,255,0.06);
-  --border2:rgba(255,255,255,0.12);
-  --text:#f0f0ee;
-  --text2:#9ba3b8;
-  --text3:#606880;
-  --accent:#e8c97a;
-  --accent2:#c9a843;
-  --blue:#4a9eff;
-  --red:#ff6b6b;
-  --green:#5dc98a;
-  --teal:#3dcbb8;
+  --bg:#0d0f14;--bg2:#13161d;--surface:#1f2330;--surface2:#252a38;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);
+  --text:#f0f0ee;--text2:#9ba3b8;--text3:#606880;
+  --accent:#e8c97a;--accent2:#c9a843;
+  --blue:#4a9eff;--red:#ff6b6b;--green:#5dc98a;--teal:#3dcbb8;
   --radius:12px;
 }
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;display:flex;height:100vh;overflow:hidden;}
 
-body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:'DM Sans',sans-serif;
-  display:flex;
-  height:100vh;
-  overflow:hidden;
+/* ── SIDEBAR ── */
+.sidebar{width:390px;min-width:390px;height:100vh;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+
+.sidebar-header{padding:20px 20px 16px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.logo-icon{width:34px;height:34px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.logo-icon svg{width:18px;height:18px;fill:var(--bg);}
+.logo h1{font-family:'DM Serif Display',serif;font-size:19px;color:var(--text);}
+.logo span{font-size:10px;font-weight:300;color:var(--text2);display:block;margin-top:-2px;}
+
+.field-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:5px;display:block;}
+.input-wrap{position:relative;margin-bottom:8px;}
+.input-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none;}
+input[type=text],input[type=time],select{
+  width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);
+  color:var(--text);padding:10px 10px 10px 34px;font-size:13px;font-family:'DM Sans',sans-serif;
+  outline:none;transition:border-color 0.2s;
 }
+input[type=time],select{padding-left:10px;}
+input:focus,select:focus{border-color:var(--accent);}
+input::placeholder{color:var(--text3);}
+select option{background:var(--surface2);}
+.route-divider{height:8px;margin:0 0 8px 17px;display:flex;align-items:center;}
+.route-divider::before{content:'';width:1px;height:100%;background:var(--border2);}
 
-/* SIDEBAR */
-.sidebar{
-  width:380px;
-  min-width:380px;
-  height:100vh;
-  background:var(--bg2);
-  border-right:1px solid var(--border);
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
-}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.row2 .input-wrap{margin-bottom:0;}
 
-.sidebar-header{
-  padding:24px 24px 20px;
-  border-bottom:1px solid var(--border);
-}
-
-.logo{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  margin-bottom:18px;
-}
-
-.logo-icon{
-  width:36px;height:36px;
-  background:var(--accent);
-  border-radius:8px;
-  display:flex;align-items:center;justify-content:center;
-}
-
-.logo-icon svg{width:20px;height:20px;fill:var(--bg);}
-
-.logo h1{
-  font-family:'DM Serif Display',serif;
-  font-size:20px;
-  color:var(--text);
-  letter-spacing:-0.3px;
-}
-
-.logo span{
-  font-size:11px;
-  font-weight:300;
-  color:var(--text2);
-  display:block;
-  margin-top:-2px;
-}
-
-.form-group{
-  margin-bottom:10px;
-}
-
-.field-label{
-  font-size:11px;
-  font-weight:500;
-  text-transform:uppercase;
-  letter-spacing:0.8px;
-  color:var(--text3);
-  margin-bottom:6px;
-  display:block;
-}
-
-.input-wrap{
-  position:relative;
-}
-
-.input-icon{
-  position:absolute;left:12px;top:50%;transform:translateY(-50%);
-  color:var(--text3);
-  pointer-events:none;
-}
-
-input[type=text]{
-  width:100%;
-  background:var(--surface);
-  border:1px solid var(--border2);
-  border-radius:var(--radius);
-  color:var(--text);
-  padding:11px 12px 11px 36px;
-  font-size:14px;
-  font-family:'DM Sans',sans-serif;
-  outline:none;
-  transition:border-color 0.2s;
-}
-
-input[type=text]:focus{border-color:var(--accent);}
-input[type=text]::placeholder{color:var(--text3);}
-
-.route-divider{
-  display:flex;align-items:center;justify-content:center;
-  height:10px;margin:0 0 10px 18px;
-}
-
-.route-divider::before{
-  content:'';width:1px;height:100%;
-  background:var(--border2);
-}
-
-.btn-row{
-  display:grid;grid-template-columns:1fr 1fr;gap:8px;
-  margin-top:14px;
-}
-
-.btn{
-  border:none;cursor:pointer;
-  border-radius:var(--radius);
-  font-family:'DM Sans',sans-serif;
-  font-size:13px;
-  font-weight:500;
-  padding:10px 14px;
-  display:flex;align-items:center;justify-content:center;gap:7px;
-  transition:all 0.18s;
-}
-
-.btn-primary{
-  background:var(--accent);
-  color:#0d0f14;
-  grid-column:1/-1;
-}
-
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+.btn{border:none;cursor:pointer;border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;padding:10px 12px;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.18s;}
+.btn svg{width:14px;height:14px;flex-shrink:0;}
+.btn-primary{background:var(--accent);color:#0d0f14;grid-column:1/-1;}
 .btn-primary:hover{background:var(--accent2);}
-
-.btn-secondary{
-  background:var(--surface);
-  color:var(--text);
-  border:1px solid var(--border2);
-}
-
+.btn-secondary{background:var(--surface);color:var(--text);border:1px solid var(--border2);}
 .btn-secondary:hover{background:var(--surface2);}
-
-.btn-danger{
-  background:transparent;
-  color:var(--text2);
-  border:1px solid var(--border);
-}
-
+.btn-danger{background:transparent;color:var(--text2);border:1px solid var(--border);}
 .btn-danger:hover{color:var(--red);border-color:var(--red);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
 
-.btn svg{width:15px;height:15px;flex-shrink:0;}
+/* ── PLANNING OPTIONS ── */
+.plan-section{padding:12px 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.plan-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.plan-group{display:flex;flex-direction:column;gap:5px;}
 
-/* FILTER CHIPS */
-.filter-section{
-  padding:16px 24px;
-  border-bottom:1px solid var(--border);
-}
+/* ── FILTERS ── */
+.filter-section{padding:12px 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.chips{display:flex;gap:6px;flex-wrap:wrap;}
+.chip{padding:5px 10px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--text2);transition:all 0.15s;display:flex;align-items:center;gap:4px;user-select:none;}
+.chip.active{background:var(--accent);color:var(--bg);border-color:var(--accent);}
+.chip svg{width:11px;height:11px;}
 
-.filter-label{
-  font-size:11px;
-  font-weight:500;
-  text-transform:uppercase;
-  letter-spacing:0.8px;
-  color:var(--text3);
-  margin-bottom:10px;
-  display:block;
-}
+/* ── STATS ── */
+.stats-bar{padding:12px 20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.stat-card{background:var(--surface);border-radius:10px;padding:9px 10px;text-align:center;}
+.stat-val{font-family:'DM Serif Display',serif;font-size:18px;color:var(--text);line-height:1;}
+.stat-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-top:3px;}
 
-.chips{
-  display:flex;gap:8px;flex-wrap:wrap;
-}
-
-.chip{
-  padding:6px 12px;
-  border-radius:20px;
-  font-size:12px;
-  font-weight:500;
-  cursor:pointer;
-  border:1px solid var(--border2);
-  background:var(--surface);
-  color:var(--text2);
-  transition:all 0.15s;
-  display:flex;align-items:center;gap:5px;
-  user-select:none;
-}
-
-.chip.active{
-  background:var(--accent);
-  color:var(--bg);
-  border-color:var(--accent);
-}
-
-.chip svg{width:12px;height:12px;}
-
-/* STATS */
-.stats-bar{
-  padding:16px 24px;
-  display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;
-  border-bottom:1px solid var(--border);
-}
-
-.stat-card{
-  background:var(--surface);
-  border-radius:10px;
-  padding:10px 12px;
-  text-align:center;
-}
-
-.stat-val{
-  font-family:'DM Serif Display',serif;
-  font-size:20px;
-  color:var(--text);
-  line-height:1;
-}
-
-.stat-lbl{
-  font-size:10px;
-  color:var(--text3);
-  text-transform:uppercase;
-  letter-spacing:0.5px;
-  margin-top:4px;
-}
-
-/* STATUS BAR */
-.status-bar{
-  padding:10px 24px;
-  border-bottom:1px solid var(--border);
-}
-
-.status-msg{
-  font-size:12px;
-  color:var(--text2);
-  display:flex;align-items:center;gap:7px;
-}
-
-.status-dot{
-  width:7px;height:7px;border-radius:50%;
-  background:var(--text3);flex-shrink:0;
-}
-
+/* ── STATUS ── */
+.status-bar{padding:8px 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.status-msg{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:7px;}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);flex-shrink:0;}
 .status-dot.loading{background:var(--accent);animation:pulse 1s infinite;}
 .status-dot.ok{background:var(--green);}
 .status-dot.error{background:var(--red);}
-
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
 
-/* RESULTS */
-.results-header{
-  padding:14px 24px 10px;
-  display:flex;align-items:center;justify-content:space-between;
+/* ── RESULTS ── */
+.results-header{padding:10px 20px 6px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.results-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);}
+.results-count{font-size:11px;color:var(--accent);font-weight:500;}
+.results-list{flex:1;overflow-y:auto;padding:0 12px 12px;min-height:0;scrollbar-width:thin;scrollbar-color:var(--surface2) transparent;}
+
+/* ── STOP CARDS ── */
+.stop-group-header{
+  font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;
+  color:var(--accent);padding:10px 4px 6px;display:flex;align-items:center;gap:8px;
 }
+.stop-group-header::after{content:'';flex:1;height:1px;background:var(--border2);}
 
-.results-title{
-  font-size:12px;
-  font-weight:500;
-  text-transform:uppercase;
-  letter-spacing:0.8px;
-  color:var(--text3);
-}
+.result-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:11px 13px;margin-bottom:7px;cursor:pointer;transition:all 0.15s;}
+.result-card:hover{border-color:var(--border2);background:var(--surface2);}
+.result-card.highlighted{border-color:var(--accent);}
+.rc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.rc-name{font-size:13px;font-weight:500;color:var(--text);}
+.rc-badge{font-size:9px;font-weight:600;padding:3px 7px;border-radius:5px;flex-shrink:0;text-transform:uppercase;letter-spacing:0.5px;}
+.badge-fuel{background:rgba(232,201,122,0.15);color:var(--accent);}
+.badge-food{background:rgba(93,201,138,0.15);color:var(--green);}
+.badge-rest{background:rgba(61,203,184,0.15);color:var(--teal);}
+.rc-details{margin-top:6px;display:flex;gap:10px;flex-wrap:wrap;}
+.rc-detail{font-size:10px;color:var(--text3);display:flex;align-items:center;gap:3px;}
+.rc-detail svg{width:10px;height:10px;flex-shrink:0;}
+.rc-time{font-size:11px;font-weight:600;color:var(--accent);margin-top:5px;}
 
-.results-count{
-  font-size:12px;
-  color:var(--accent);
-  font-weight:500;
-}
-
-.results-list{
-  flex:1;overflow-y:auto;padding:0 16px 16px;
-  scrollbar-width:thin;scrollbar-color:var(--surface2) transparent;
-  min-height:0;
-}
-
-.result-card{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  padding:12px 14px;
-  margin-bottom:8px;
-  cursor:pointer;
-  transition:all 0.15s;
-}
-
-.result-card:hover{
-  border-color:var(--border2);
-  background:var(--surface2);
-}
-
-.result-card.highlighted{
-  border-color:var(--accent);
-}
-
-.rc-top{
-  display:flex;align-items:flex-start;justify-content:space-between;gap:8px;
-}
-
-.rc-name{
-  font-size:14px;
-  font-weight:500;
-  color:var(--text);
-}
-
-.rc-badge{
-  font-size:10px;
-  font-weight:500;
-  padding:3px 8px;
-  border-radius:6px;
-  flex-shrink:0;
-  text-transform:uppercase;
-  letter-spacing:0.5px;
-}
-
-.badge-fuel{
-  background:rgba(232,201,122,0.15);
-  color:var(--accent);
-}
-
-.badge-food{
-  background:rgba(93,201,138,0.15);
-  color:var(--green);
-}
-
-.badge-rest{
-  background:rgba(61,203,184,0.15);
-  color:var(--teal);
-}
-
-.rc-details{
-  margin-top:7px;
-  display:flex;gap:12px;flex-wrap:wrap;
-}
-
-.rc-detail{
-  font-size:11px;
-  color:var(--text3);
-  display:flex;align-items:center;gap:4px;
-}
-
-.rc-detail svg{width:11px;height:11px;flex-shrink:0;}
-
-/* MAP */
-#map{
-  flex:1;
-  height:100vh;
-}
-
-/* Custom leaflet popups */
-.leaflet-popup-content-wrapper{
-  background:var(--surface);
-  color:var(--text);
-  border:1px solid var(--border2);
-  border-radius:var(--radius) !important;
-  box-shadow:0 8px 30px rgba(0,0,0,0.5) !important;
-  padding:0 !important;
-}
-
-.leaflet-popup-content{
-  margin:0 !important;
-  width:auto !important;
-}
-
-.popup-inner{padding:12px 14px;}
-.popup-name{font-size:14px;font-weight:500;margin-bottom:4px;}
-.popup-type{font-size:11px;color:var(--text3);}
+/* ── MAP ── */
+#map{flex:1;height:100vh;}
+.leaflet-popup-content-wrapper{background:var(--surface);color:var(--text);border:1px solid var(--border2);border-radius:var(--radius) !important;box-shadow:0 8px 30px rgba(0,0,0,0.5) !important;padding:0 !important;}
+.leaflet-popup-content{margin:0 !important;width:auto !important;}
+.popup-inner{padding:11px 13px;}
+.popup-name{font-size:13px;font-weight:500;margin-bottom:3px;}
+.popup-type{font-size:10px;color:var(--text3);}
+.popup-eta{font-size:11px;color:var(--accent);font-weight:600;margin-top:4px;}
 .leaflet-popup-tip{background:var(--surface) !important;}
-.leaflet-popup-close-button{color:var(--text2) !important;top:8px !important;right:8px !important;}
-
-/* custom marker icons handled inline */
+.leaflet-popup-close-button{color:var(--text2) !important;top:6px !important;right:8px !important;}
 
 @media(max-width:800px){
   body{flex-direction:column;}
-  .sidebar{width:100%;min-width:unset;height:auto;max-height:55vh;}
-  #map{height:45vh;}
+  .sidebar{width:100%;min-width:unset;height:auto;max-height:60vh;}
+  #map{height:40vh;}
 }
 </style>
 </head>
 <body>
-
 <div class="sidebar">
+  <!-- HEADER / FORM -->
   <div class="sidebar-header">
     <div class="logo">
       <div class="logo-icon">
-        <svg viewBox="0 0 24 24"><path d="M1.5 6a.5.5 0 0 1 .5-.5H5a.5.5 0 0 1 0 1H3.5v10h17V6.5H19a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5v11a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5V6zm10.5 3.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm-3 2a3 3 0 1 1 6 0 3 3 0 0 1-6 0zM6 7.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1H7v2a.5.5 0 0 1-1 0v-2.5zm12 0a.5.5 0 0 1-.5.5H16v2a.5.5 0 0 1-1 0V7.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5z"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
       </div>
-      <div>
-        <h1>AutoRoute</h1>
-        <span>Planificateur de voyage</span>
-      </div>
+      <div><h1>AutoRoute</h1><span>Planificateur de voyage</span></div>
     </div>
 
-    <div class="form-group">
-      <label class="field-label">Départ</label>
-      <div class="input-wrap">
-        <svg class="input-icon" viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><circle cx="8" cy="8" r="3"/><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 1a6 6 0 1 1 0 12A6 6 0 0 1 8 2z"/></svg>
-        <input type="text" id="start" placeholder="Paris, Bordeaux…" value="Paris"/>
-      </div>
+    <div class="input-wrap">
+      <svg class="input-icon" viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><circle cx="8" cy="8" r="3"/><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 1a6 6 0 1 1 0 12A6 6 0 0 1 8 2z"/></svg>
+      <input type="text" id="start" placeholder="Départ…" value="Paris"/>
     </div>
-
     <div class="route-divider"></div>
-
-    <div class="form-group">
-      <label class="field-label">Arrivée</label>
-      <div class="input-wrap">
-        <svg class="input-icon" viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
-        <input type="text" id="end" placeholder="Lyon, Marseille…" value="Barcelone"/>
-      </div>
+    <div class="input-wrap">
+      <svg class="input-icon" viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
+      <input type="text" id="end" placeholder="Arrivée…" value="Barcelone"/>
     </div>
 
     <div class="btn-row">
       <button class="btn btn-primary" id="btnRoute">
-        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h13A1.5 1.5 0 0 1 16 3.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 12.5v-9zm15 0a.5.5 0 0 0-.5-.5h-13a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5v-9z"/><path d="M7 5.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm-1.496-.854a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 1 1 .708-.708l.146.147 1.146-1.147a.5.5 0 0 1 .708 0zM7 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm-1.496-.854a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 0 1 .708-.708l.146.147 1.146-1.147a.5.5 0 0 1 .708 0z"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3L3 10.53v.98l6.84 2.65L12.48 21h.98L21 3z"/></svg>
         Calculer l'itinéraire
       </button>
-      <button class="btn btn-secondary" id="btnStops">
-        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
-        Trouver les arrêts
+      <button class="btn btn-secondary" id="btnStops" disabled>
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+        Planifier les arrêts
       </button>
       <button class="btn btn-danger" id="btnClear">
-        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1H2.5zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zM8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5zm3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0z"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
         Effacer
       </button>
     </div>
   </div>
 
+  <!-- PLANNING OPTIONS -->
+  <div class="plan-section">
+    <span class="field-label" style="margin-bottom:8px">Options de planification</span>
+    <div class="plan-row">
+      <div class="plan-group">
+        <span class="field-label">Heure de départ</span>
+        <input type="time" id="departTime" value="08:00"/>
+      </div>
+      <div class="plan-group">
+        <span class="field-label">Arrêt toutes les</span>
+        <select id="stopInterval">
+          <option value="0">Automatique</option>
+          <option value="60">1 heure</option>
+          <option value="90">1h30</option>
+          <option value="120" selected>2 heures</option>
+          <option value="150">2h30</option>
+          <option value="180">3 heures</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:8px;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text2);">
+        <input type="checkbox" id="lunchSnap" checked style="width:auto;padding:0;accent-color:var(--accent);"/>
+        Caler un arrêt déjeuner entre 12h et 14h
+      </label>
+    </div>
+  </div>
+
+  <!-- FILTERS -->
   <div class="filter-section">
-    <span class="filter-label">Filtres d'arrêts</span>
+    <span class="field-label" style="margin-bottom:8px">Types d'arrêts</span>
     <div class="chips">
       <div class="chip active" data-filter="fuel">
-        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3 2.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-.5.5h-5a.5.5 0 0 1-.5-.5v-5zM1 6a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1h-1A.5.5 0 0 1 1 6zm.5 4.5A1.5 1.5 0 0 0 0 12v1h16v-1a1.5 1.5 0 0 0-1.5-1.5h-13zM11 2.5v3a.5.5 0 0 0 .5.5H14a.5.5 0 0 0 .5-.5v-3A.5.5 0 0 0 14 2h-2.5a.5.5 0 0 0-.5.5z"/></svg>
-        Stations-service
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1.5v5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V9c0-.69-.28-1.32-.73-1.77zM18 10c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zM8 18v-4.5H6L10 7v4.5h2L8 18z"/></svg>
+        Carburant
       </div>
       <div class="chip active" data-filter="food">
-        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V7.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/></svg>
-        Restaurants
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.06 22.99h1.66c.84 0 1.53-.64 1.63-1.46L23 5.05h-5V1h-1.97v4.05h-4.97l.3 2.34c1.71.47 3.31 1.32 4.27 2.26 1.44 1.42 2.43 2.89 2.43 5.29v8.05zM1 21.99V21h15.03v.99c0 .55-.45 1-1.01 1H2.01c-.56 0-1.01-.45-1.01-1zm15.03-7c0-8.17-15.03-8.17-15.03 0h15.03zM1.02 17h15v2h-15z"/></svg>
+        Restauration
       </div>
       <div class="chip active" data-filter="rest">
-        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 2A1.5 1.5 0 0 0 0 3.5v2h6a.5.5 0 0 1 .5.5v1.5a.5.5 0 0 0 1 0V6a.5.5 0 0 1 .5-.5h6V3.5A1.5 1.5 0 0 0 13.5 2h-12zm7 3.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/><path d="M0 6v7a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 16 13V6H8.5v1.5a1.5 1.5 0 0 1-3 0V6H0z"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7s-3 1.34-3 3 1.34 3 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4z"/></svg>
         Aires de repos
       </div>
     </div>
   </div>
 
+  <!-- STATS -->
   <div class="stats-bar">
-    <div class="stat-card">
-      <div class="stat-val" id="distance">—</div>
-      <div class="stat-lbl">Distance</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-val" id="duration">—</div>
-      <div class="stat-lbl">Durée</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-val" id="stopsCount">0</div>
-      <div class="stat-lbl">Arrêts</div>
-    </div>
+    <div class="stat-card"><div class="stat-val" id="distance">—</div><div class="stat-lbl">Distance</div></div>
+    <div class="stat-card"><div class="stat-val" id="duration">—</div><div class="stat-lbl">Durée</div></div>
+    <div class="stat-card"><div class="stat-val" id="stopsCount">0</div><div class="stat-lbl">Arrêts</div></div>
   </div>
 
+  <!-- STATUS -->
   <div class="status-bar">
-    <div class="status-msg" id="statusMsg">
+    <div class="status-msg">
       <div class="status-dot" id="statusDot"></div>
-      <span id="statusText">Prêt à planifier votre voyage</span>
+      <span id="statusText">Entrez un itinéraire pour commencer</span>
     </div>
   </div>
 
+  <!-- RESULTS -->
   <div class="results-header" id="resultsHeader" style="display:none">
-    <span class="results-title">Arrêts sur la route</span>
+    <span class="results-title">Arrêts planifiés</span>
     <span class="results-count" id="resultsCount"></span>
   </div>
-
   <div class="results-list" id="resultsList"></div>
 </div>
 
@@ -505,283 +243,333 @@ input[type=text]::placeholder{color:var(--text3);}
 <script>
 const ORS_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjZhMmQ3MGMxMDcxZTQ2MDk4MDNkOGQyYTE2ZGZhYTcyIiwiaCI6Im11cm11cjY0In0=";
 
-// overpass.private.coffee allows cross-origin requests and is reliable
-const OVERPASS = [
-  "https://overpass.private.coffee/api/interpreter",
-  "https://overpass-api.de/api/interpreter"
-];
-
-// Map init with dark tiles
-const map = L.map("map", {zoomControl: false}).setView([46.5, 2.3], 6);
+// ── MAP ──────────────────────────────────────────────
+const map = L.map("map",{zoomControl:false}).setView([46.5,2.3],6);
 L.control.zoom({position:'bottomright'}).addTo(map);
-
-L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-  attribution: "&copy; OpenStreetMap &copy; CARTO",
-  maxZoom:19
+L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{
+  attribution:"&copy; OpenStreetMap &copy; CARTO", maxZoom:19
 }).addTo(map);
 
-// State
-let routeCoords = [], routeLayer = null, markers = [];
+// ── STATE ────────────────────────────────────────────
+let routeCoords=[], routeDurationSec=0, routeLayer=null, markers=[];
 let activeFilters = new Set(["fuel","food","rest"]);
-let allStops = [];
+let allStops=[];
 
-// Status helpers
-function setStatus(msg, state="idle"){
-  const dot = document.getElementById("statusDot");
-  const txt = document.getElementById("statusText");
-  dot.className = "status-dot " + (state==="loading"?"loading":state==="ok"?"ok":state==="error"?"error":"");
-  txt.textContent = msg;
+// ── HELPERS ──────────────────────────────────────────
+function setStatus(msg,state="idle"){
+  document.getElementById("statusDot").className="status-dot "+(state==="loading"?"loading":state==="ok"?"ok":state==="error"?"error":"");
+  document.getElementById("statusText").textContent=msg;
 }
-
-function setStats(dist, dur, cnt){
-  document.getElementById("distance").textContent = dist || "—";
-  document.getElementById("duration").textContent = dur || "—";
-  document.getElementById("stopsCount").textContent = cnt || 0;
-}
-
-function fmtDist(m){ return m>=1000 ? (m/1000).toFixed(0)+" km" : Math.round(m)+" m"; }
-function fmtTime(s){
-  const h=Math.floor(s/3600), m=Math.round((s%3600)/60);
-  return h>0 ? h+"h "+String(m).padStart(2,"0") : m+"min";
+function fmtDist(m){return m>=1000?(m/1000).toFixed(0)+" km":Math.round(m)+" m";}
+function fmtTime(s){const h=Math.floor(s/3600),m=Math.round((s%3600)/60);return h>0?h+"h "+String(m).padStart(2,"0"):m+"min";}
+function addMinutes(hhmm,mins){
+  const [h,m]=hhmm.split(":").map(Number);
+  const total=h*60+m+mins;
+  return String(Math.floor(total/60)%24).padStart(2,"0")+":"+String(total%60).padStart(2,"0");
 }
 
 async function geocode(q){
-  const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`);
-  const d = await r.json();
-  if(!d.length) throw new Error("Ville introuvable : "+q);
-  return [parseFloat(d[0].lat), parseFloat(d[0].lon)];
+  const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`,
+    {headers:{"Accept-Language":"fr"}});
+  const d=await r.json();
+  if(!d.length) throw new Error("Lieu introuvable : "+q);
+  return [parseFloat(d[0].lat),parseFloat(d[0].lon)];
 }
 
-function clearMarkers(){
-  markers.forEach(m=>map.removeLayer(m));
-  markers = [];
+// Reverse geocode a coordinate to get a town name
+async function reverseGeocode(lat,lon){
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
+      {headers:{"Accept-Language":"fr"}});
+    const d=await r.json();
+    return d.address?.city||d.address?.town||d.address?.village||d.address?.municipality||d.display_name?.split(",")[0]||"";
+  }catch{return "";}
 }
 
-function clearAll(){
-  clearMarkers();
-  if(routeLayer){map.removeLayer(routeLayer);routeLayer=null;}
-  routeCoords=[];allStops=[];
-  setStats(null,null,null);
-  setStatus("Prêt à planifier votre voyage","idle");
-  document.getElementById("resultsList").innerHTML="";
-  document.getElementById("resultsHeader").style.display="none";
-}
-
-function distToRoute(lat,lon){
-  let min=Infinity;
-  for(const c of routeCoords){
-    const dx=lat-c[0], dy=lon-c[1];
-    const d=Math.sqrt(dx*dx+dy*dy);
-    if(d<min) min=d;
+// Search nearby POIs using Nominatim (fast, no CORS issues)
+async function searchNearby(lat,lon,type){
+  // type: "fuel" | "food" | "rest"
+  const queries={
+    fuel:[["amenity","fuel"]],
+    food:[["amenity","restaurant"],["amenity","fast_food"],["amenity","cafe"]],
+    rest:[["highway","rest_area"],["highway","services"],["amenity","parking"]]
+  };
+  const pairs=queries[type]||[];
+  const results=[];
+  // Use Nominatim search around the point for each tag pair
+  for(const [k,v] of pairs){
+    try{
+      const url=`https://nominatim.openstreetmap.org/search?format=json&limit=3&${k}=${encodeURIComponent(v)}&lat=${lat}&lon=${lon}&radius=5000&bounded=0`;
+      const r=await fetch(url,{headers:{"Accept-Language":"fr"}});
+      const d=await r.json();
+      d.forEach(item=>{
+        results.push({
+          lat:parseFloat(item.lat),lon:parseFloat(item.lon),
+          name:item.display_name.split(",")[0],
+          address:item.display_name.split(",").slice(1,3).join(",").trim(),
+          type, k, v
+        });
+      });
+    }catch(e){console.warn("Nominatim err",e);}
   }
-  return min;
+  return results;
 }
 
-// Custom markers
-function makeIcon(type){
-  const colors = {fuel:"#e8c97a", food:"#5dc98a", rest:"#3dcbb8"};
-  const c = colors[type]||"#9ba3b8";
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="34" viewBox="0 0 28 34">
-    <path d="M14 0C6.27 0 0 6.27 0 14c0 9.33 14 20 14 20S28 23.33 28 14C28 6.27 21.73 0 14 0z" fill="${c}"/>
-    <circle cx="14" cy="14" r="7" fill="#0d0f14"/>
+// Get coord at a given fraction along the route polyline
+function coordAtFraction(frac){
+  const idx=Math.min(Math.floor(frac*routeCoords.length), routeCoords.length-1);
+  return routeCoords[idx];
+}
+
+// ── ICONS ────────────────────────────────────────────
+function makeIcon(type,idx){
+  const colors={fuel:"#e8c97a",food:"#5dc98a",rest:"#3dcbb8"};
+  const c=colors[type]||"#9ba3b8";
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="30" height="37" viewBox="0 0 30 37">
+    <path d="M15 0C7.27 0 1 6.27 1 14c0 9.33 14 23 14 23S29 23.33 29 14C29 6.27 22.73 0 15 0z" fill="${c}" stroke="#0d0f14" stroke-width="1.5"/>
+    <circle cx="15" cy="14" r="7" fill="#0d0f14"/>
+    <text x="15" y="18" text-anchor="middle" font-size="9" font-family="DM Sans,Arial" fill="${c}" font-weight="700">${idx}</text>
   </svg>`;
-  return L.divIcon({
-    html: svg,
-    iconSize:[28,34], iconAnchor:[14,34], popupAnchor:[0,-32],
-    className:""
-  });
+  return L.divIcon({html:svg,iconSize:[30,37],iconAnchor:[15,37],popupAnchor:[0,-34],className:""});
 }
-
-function makeRouteEndIcon(color){
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22">
+function makeEndIcon(color){
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22">
     <circle cx="11" cy="11" r="10" fill="${color}" stroke="#0d0f14" stroke-width="2"/>
     <circle cx="11" cy="11" r="4" fill="#0d0f14"/>
   </svg>`;
-  return L.divIcon({html:svg, iconSize:[22,22], iconAnchor:[11,11], className:""});
+  return L.divIcon({html:svg,iconSize:[22,22],iconAnchor:[11,11],className:""});
 }
 
+// ── CALC ROUTE ───────────────────────────────────────
 async function calcRoute(){
   clearAll();
-  setStatus("Géocodage des villes…","loading");
-  try {
-    const [s, e] = await Promise.all([
+  setStatus("Géocodage…","loading");
+  try{
+    const [s,e]=await Promise.all([
       geocode(document.getElementById("start").value),
       geocode(document.getElementById("end").value)
     ]);
-
     setStatus("Calcul de l'itinéraire…","loading");
-    const res = await fetch("https://api.openrouteservice.org/v2/directions/driving-car/geojson", {
+    const res=await fetch("https://api.openrouteservice.org/v2/directions/driving-car/geojson",{
       method:"POST",
       headers:{"Authorization":ORS_KEY,"Content-Type":"application/json"},
-      body: JSON.stringify({coordinates:[[s[1],s[0]],[e[1],e[0]]]})
+      body:JSON.stringify({coordinates:[[s[1],s[0]],[e[1],e[0]]]})
     });
-    const data = await res.json();
+    const data=await res.json();
     if(!data.features?.length) throw new Error("Aucun itinéraire trouvé");
 
-    routeCoords = data.features[0].geometry.coordinates.map(c=>[c[1],c[0]]);
-    routeLayer = L.polyline(routeCoords,{color:"#e8c97a",weight:4,opacity:0.8}).addTo(map);
+    routeCoords=data.features[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+    routeDurationSec=data.features[0].properties.summary.duration;
+    routeLayer=L.polyline(routeCoords,{color:"#e8c97a",weight:4,opacity:0.85}).addTo(map);
     map.fitBounds(routeLayer.getBounds(),{padding:[40,40]});
 
-    // endpoint markers
-    const sm = L.marker(s,{icon:makeRouteEndIcon("#4a9eff")}).addTo(map)
+    const sm=L.marker(s,{icon:makeEndIcon("#4a9eff")}).addTo(map)
       .bindPopup(`<div class="popup-inner"><div class="popup-name">${document.getElementById("start").value}</div><div class="popup-type">Départ</div></div>`);
-    const em = L.marker(e,{icon:makeRouteEndIcon("#ff6b6b")}).addTo(map)
+    const em=L.marker(e,{icon:makeEndIcon("#ff6b6b")}).addTo(map)
       .bindPopup(`<div class="popup-inner"><div class="popup-name">${document.getElementById("end").value}</div><div class="popup-type">Arrivée</div></div>`);
     markers.push(sm,em);
 
-    const sum = data.features[0].properties.summary;
-    setStats(fmtDist(sum.distance), fmtTime(sum.duration), 0);
-    setStatus("Itinéraire calculé — cliquez sur « Trouver les arrêts »","ok");
-  } catch(e){
+    const sum=data.features[0].properties.summary;
+    document.getElementById("distance").textContent=fmtDist(sum.distance);
+    document.getElementById("duration").textContent=fmtTime(sum.duration);
+    document.getElementById("stopsCount").textContent="0";
+    document.getElementById("btnStops").disabled=false;
+    setStatus("Itinéraire calculé — cliquez sur « Planifier les arrêts »","ok");
+  }catch(e){
     setStatus("Erreur : "+e.message,"error");
     console.error(e);
   }
 }
 
-async function findStops(){
-  if(!routeCoords.length){ setStatus("Tracez d'abord un itinéraire","error"); return; }
+// ── PLAN STOPS ───────────────────────────────────────
+async function planStops(){
+  if(!routeCoords.length){setStatus("Tracez d'abord un itinéraire","error");return;}
 
-  const keep = markers.slice(0,2);
+  // Clear old stop markers
   markers.slice(2).forEach(m=>map.removeLayer(m));
-  markers = keep;
-  allStops = [];
+  markers=markers.slice(0,2);
+  allStops=[];
   document.getElementById("resultsList").innerHTML="";
   document.getElementById("resultsHeader").style.display="none";
 
-  if(!activeFilters.size){ setStatus("Aucun filtre actif","error"); return; }
+  const departTime=document.getElementById("departTime").value||"08:00";
+  const intervalMin=parseInt(document.getElementById("stopInterval").value)||120;
+  const lunchSnap=document.getElementById("lunchSnap").checked;
+  const totalMin=Math.round(routeDurationSec/60);
 
-  // Pick ~8 evenly-spaced waypoints along the route (skip start/end 5%)
-  const N_PTS = 8;
-  const margin = Math.floor(routeCoords.length * 0.05);
-  const inner = routeCoords.slice(margin, routeCoords.length - margin);
-  const step = Math.max(1, Math.floor(inner.length / N_PTS));
-  const waypoints = [];
-  for(let i=0; i<inner.length && waypoints.length<N_PTS; i+=step) waypoints.push(inner[i]);
-
-  // Build one compact Overpass query with around:800m per waypoint
-  const R = 2000; // metres radius per waypoint
-  const unionParts = [];
-  for(const pt of waypoints){
-    const c = `${pt[0].toFixed(5)},${pt[1].toFixed(5)}`;
-    if(activeFilters.has("fuel")) unionParts.push(`node(around:${R},${c})["amenity"="fuel"];`);
-    if(activeFilters.has("food")) unionParts.push(`node(around:${R},${c})["amenity"~"^(restaurant|fast_food|cafe)$"];`);
-    if(activeFilters.has("rest")) unionParts.push(`node(around:${R},${c})["highway"~"^(rest_area|services)$"];`);
+  // Build list of stop times (in minutes from departure)
+  const stopTimes=[]; // minutes from departure
+  if(intervalMin>0){
+    for(let t=intervalMin; t<totalMin-20; t+=intervalMin) stopTimes.push(t);
+  } else {
+    // Auto: every 2h
+    for(let t=120; t<totalMin-20; t+=120) stopTimes.push(t);
   }
 
-  const qBody = `[out:json][timeout:20];(\n${unionParts.join("\n")}\n);\nout 120;`;
-
-  setStatus(`Interrogation de ${waypoints.length} points du trajet…`,"loading");
-
-  let data = null;
-  for(const ep of OVERPASS){
-    try{
-      const ctrl = new AbortController();
-      const tid = setTimeout(()=>ctrl.abort(), 18000);
-      const r = await fetch(ep, {method:"POST", body:qBody, signal:ctrl.signal});
-      clearTimeout(tid);
-      if(!r.ok) throw new Error("HTTP "+r.status);
-      data = await r.json();
-      if(data?.elements?.length) break;
-    } catch(err){ console.warn("Overpass fallback",ep,err.message); }
+  // Lunch snap: find the stop closest to 12h-14h window, or insert one
+  if(lunchSnap){
+    const [dh,dm]=departTime.split(":").map(Number);
+    const departMin=dh*60+dm;
+    const lunch12=12*60-departMin;
+    const lunch14=14*60-departMin;
+    // Check if any stop already falls in [lunch12, lunch14]
+    const hasLunch=stopTimes.some(t=>t>=lunch12&&t<=lunch14);
+    if(!hasLunch && lunch12>0 && lunch12<totalMin){
+      // Insert at 12h30 relative to depart
+      const lunchAt=Math.max(lunch12, Math.min(lunch14, lunch12+30));
+      if(lunchAt>0 && lunchAt<totalMin) stopTimes.push(lunchAt);
+    }
+    stopTimes.sort((a,b)=>a-b);
   }
 
-  if(!data?.elements?.length){
-    setStatus("Aucun arrêt trouvé — essayez un autre itinéraire","error"); return;
+  if(!stopTimes.length){
+    setStatus("Le trajet est trop court pour des arrêts planifiés","error");return;
   }
 
-  // Deduplicate, classify, filter by proximity to polyline
-  const MAX_DEG = 0.10; // ~11km
-  const seen = new Set();
-  const raw = [];
-  for(const e of data.elements){
-    if(!e.lat||!e.lon||seen.has(e.id)) continue;
-    seen.add(e.id);
-    const dist = distToRoute(e.lat, e.lon);
-    if(dist > MAX_DEG) continue;
-    const am = e.tags?.amenity||"";
-    const hw = e.tags?.highway||"";
-    let type="rest", label="Aire de repos";
-    if(am==="fuel")                                  { type="fuel"; label="Station-service"; }
-    else if(am==="restaurant")                        { type="food"; label="Restaurant"; }
-    else if(am==="fast_food")                         { type="food"; label="Restauration rapide"; }
-    else if(am==="cafe")                              { type="food"; label="Café"; }
-    else if(hw==="services")                          { label="Aire de services"; }
-    raw.push({e, dist, type, label});
+  setStatus(`Recherche de ${stopTimes.length} points d'arrêt…`,"loading");
+
+  // For each stop time, get route coord at that fraction and search nearby
+  const stopData=[];
+  let searchCount=0;
+  for(const t of stopTimes){
+    const frac=t/totalMin;
+    const coord=coordAtFraction(frac);
+    const eta=addMinutes(departTime,t);
+
+    // Determine which types to search
+    const [dh,dm]=departTime.split(":").map(Number);
+    const absMin=(dh*60+dm+t)%(24*60);
+    const absH=absMin/60;
+    // At lunch window, prefer food
+    const isLunch=absH>=12&&absH<=14;
+    const typesToSearch=[...activeFilters];
+
+    setStatus(`Recherche arrêt ${++searchCount}/${stopTimes.length} (ETA ${eta})…`,"loading");
+
+    // Run all type searches in parallel for this waypoint
+    const searches=typesToSearch.map(type=>searchNearby(coord[0],coord[1],type));
+    const results=await Promise.all(searches);
+    const flat=results.flat();
+
+    // Pick best per type (closest to waypoint, prefer named ones)
+    const byType={};
+    for(const r of flat){
+      const dist=Math.sqrt((r.lat-coord[0])**2+(r.lon-coord[1])**2)*111000;
+      r.distM=dist;
+      if(!byType[r.type]||dist<byType[r.type].distM) byType[r.type]=r;
+    }
+
+    stopData.push({t,frac,coord,eta,isLunch,byType});
   }
 
-  raw.sort((a,b)=>a.dist-b.dist);
-  allStops = raw.slice(0,20);
-
-  renderStops();
-  setStatus(`${allStops.length} arrêts trouvés sur le trajet`,"ok");
-  document.getElementById("stopsCount").textContent = allStops.length;
+  allStops=stopData;
+  renderStops(departTime,totalMin);
+  document.getElementById("stopsCount").textContent=stopTimes.length;
+  setStatus(`${stopTimes.length} arrêts planifiés sur le trajet`,"ok");
 }
 
-function renderStops(){
-  // Remove old stop markers (keep first 2 = route endpoints)
+// ── RENDER STOPS ─────────────────────────────────────
+function renderStops(departTime,totalMin){
   markers.slice(2).forEach(m=>map.removeLayer(m));
-  markers = markers.slice(0,2);
+  markers=markers.slice(0,2);
 
-  const list = document.getElementById("resultsList");
+  const list=document.getElementById("resultsList");
   list.innerHTML="";
-  const header = document.getElementById("resultsHeader");
-  header.style.display = allStops.length?"flex":"none";
-  document.getElementById("resultsCount").textContent = allStops.length+" arrêts";
+  const header=document.getElementById("resultsHeader");
+  if(!allStops.length){header.style.display="none";return;}
+  header.style.display="flex";
+  document.getElementById("resultsCount").textContent=allStops.length+" arrêt"+(allStops.length>1?"s":"");
 
   allStops.forEach((stop,idx)=>{
-    const {e,type,label} = stop;
-    const name = e.tags?.name || label;
-    const brand = e.tags?.brand||"";
-    const cuisine = e.tags?.cuisine||"";
-    const openHours = e.tags?.opening_hours||"";
-    const phone = e.tags?.phone||"";
+    // Group header
+    const gh=document.createElement("div");
+    gh.className="stop-group-header";
+    gh.textContent=`Arrêt ${idx+1} · ${stop.eta}${stop.isLunch?" 🍽 Déjeuner":""}`;
+    list.appendChild(gh);
 
-    // Marker
-    const mk = L.marker([e.lat,e.lon],{icon:makeIcon(type)}).addTo(map);
-    mk.bindPopup(`<div class="popup-inner">
-      <div class="popup-name">${name}</div>
-      <div class="popup-type">${label}${brand?" · "+brand:""}</div>
-      ${openHours?`<div class="popup-type" style="margin-top:4px">🕐 ${openHours}</div>`:""}
-    </div>`);
-    markers.push(mk);
+    // One card per found type
+    const types=Object.values(stop.byType);
+    if(!types.length){
+      const empty=document.createElement("div");
+      empty.className="result-card";
+      empty.style.opacity="0.5";
+      empty.innerHTML=`<div class="rc-name">Aucun établissement trouvé à ce point</div>`;
+      list.appendChild(empty);
+      // Still place a waypoint marker
+      const mk=L.marker(stop.coord,{icon:makeIcon("rest",idx+1)}).addTo(map)
+        .bindPopup(`<div class="popup-inner"><div class="popup-name">Point d'arrêt ${idx+1}</div><div class="popup-eta">ETA : ${stop.eta}</div></div>`);
+      markers.push(mk);
+      return;
+    }
 
-    // Card
-    const card = document.createElement("div");
-    card.className="result-card";
-    card.innerHTML=`
-      <div class="rc-top">
-        <div class="rc-name">${name}</div>
-        <div class="rc-badge badge-${type}">${label}</div>
-      </div>
-      <div class="rc-details">
-        ${brand?`<div class="rc-detail"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 2a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H2zm6.5 4.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3a.5.5 0 0 1 1 0z"/></svg>${brand}</div>`:""}
-        ${cuisine?`<div class="rc-detail"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8.5 2.687c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492V2.687zM8 2.176v9.988c-.946-.542-2.13-.617-3.243-.51-1.18.12-2.37.461-3.257.81V2.888c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752zM.5 2.25a.5.5 0 0 0-.5.5v11a.5.5 0 0 0 .5.5h15a.5.5 0 0 0 .5-.5v-11a.5.5 0 0 0-.5-.5H.5z"/></svg>${cuisine}</div>`:""}
-        ${openHours?`<div class="rc-detail"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/></svg>${openHours}</div>`:""}
-        <div class="rc-detail"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>${fmtDist(stop.dist*111000)} de la route</div>
-      </div>
-    `;
-    card.addEventListener("click",()=>{
-      map.setView([e.lat,e.lon],15,{animate:true});
-      mk.openPopup();
-      document.querySelectorAll(".result-card").forEach(c=>c.classList.remove("highlighted"));
-      card.classList.add("highlighted");
+    types.forEach((poi,pi)=>{
+      const typeLabels={fuel:"Station-service",food:"Restauration",rest:"Aire de repos"};
+      const label=typeLabels[poi.type]||poi.type;
+
+      // Place marker only for first POI of each stop
+      if(pi===0){
+        const mk=L.marker([poi.lat,poi.lon],{icon:makeIcon(poi.type,idx+1)}).addTo(map)
+          .bindPopup(`<div class="popup-inner">
+            <div class="popup-name">${poi.name}</div>
+            <div class="popup-type">${label}</div>
+            <div class="popup-eta">ETA : ${stop.eta}</div>
+          </div>`);
+        markers.push(mk);
+      }
+
+      const card=document.createElement("div");
+      card.className="result-card";
+      card.innerHTML=`
+        <div class="rc-top">
+          <div class="rc-name">${poi.name}</div>
+          <div class="rc-badge badge-${poi.type}">${label}</div>
+        </div>
+        <div class="rc-time">⏱ ${stop.eta}</div>
+        <div class="rc-details">
+          <div class="rc-detail">
+            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
+            ${poi.address||"Sur le trajet"}
+          </div>
+          ${poi.distM?`<div class="rc-detail"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 0a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4.5a.5.5 0 0 0 0-1H1.5V1H5v1.5a.5.5 0 0 0 .5.5H8a.5.5 0 0 0 .5-.5V1h6.5v12.5H14a.5.5 0 0 0 0 1H15a1 1 0 0 0 1-1V1a1 1 0 0 0-1-1H1z"/></svg>${Math.round(poi.distM)} m de l'axe</div>`:""}
+        </div>
+      `;
+      card.addEventListener("click",()=>{
+        map.setView([poi.lat,poi.lon],15,{animate:true});
+        markers.find(m=>m.getLatLng&&Math.abs(m.getLatLng().lat-poi.lat)<0.0001)?.openPopup();
+        document.querySelectorAll(".result-card").forEach(c=>c.classList.remove("highlighted"));
+        card.classList.add("highlighted");
+      });
+      list.appendChild(card);
     });
-    list.appendChild(card);
   });
 }
 
-// Filter chips
+// ── CLEAR ────────────────────────────────────────────
+function clearAll(){
+  markers.forEach(m=>map.removeLayer(m));markers=[];
+  if(routeLayer){map.removeLayer(routeLayer);routeLayer=null;}
+  routeCoords=[];routeDurationSec=0;allStops=[];
+  document.getElementById("distance").textContent="—";
+  document.getElementById("duration").textContent="—";
+  document.getElementById("stopsCount").textContent="0";
+  document.getElementById("resultsList").innerHTML="";
+  document.getElementById("resultsHeader").style.display="none";
+  document.getElementById("btnStops").disabled=true;
+  setStatus("Entrez un itinéraire pour commencer","idle");
+}
+
+// ── FILTERS ──────────────────────────────────────────
 document.querySelectorAll(".chip").forEach(chip=>{
   chip.addEventListener("click",()=>{
-    const f = chip.dataset.filter;
-    if(activeFilters.has(f)){ activeFilters.delete(f); chip.classList.remove("active"); }
-    else { activeFilters.add(f); chip.classList.add("active"); }
+    const f=chip.dataset.filter;
+    if(activeFilters.has(f)){activeFilters.delete(f);chip.classList.remove("active");}
+    else{activeFilters.add(f);chip.classList.add("active");}
   });
 });
 
-document.getElementById("btnRoute").addEventListener("click", calcRoute);
-document.getElementById("btnStops").addEventListener("click", findStops);
-document.getElementById("btnClear").addEventListener("click", clearAll);
+document.getElementById("btnRoute").addEventListener("click",calcRoute);
+document.getElementById("btnStops").addEventListener("click",planStops);
+document.getElementById("btnClear").addEventListener("click",clearAll);
 </script>
 </body>
 </html>
