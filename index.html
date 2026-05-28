@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<title>MiRuta v2.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0d0f14;--panel:#12151d;--surface:#1c2030;--surface2:#232840;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.14);
+  --text:#eef0f5;--text2:#8b95af;--text3:#4e5670;
+  --gold:#e8c97a;--gold2:#c9a843;
+  --blue:#5ba3ff;--red:#ff6b6b;--green:#52d48a;--teal:#3ecec0;--purple:#a78bfa;
+  --r:11px;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;display:flex;height:100vh;overflow:hidden;}
+
+/* ══ SIDEBAR ══════════════════════════════════ */
+.sidebar{
+  width:370px;min-width:370px;height:100vh;
+  background:var(--panel);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+
+/* ── Top bar ── */
+.topbar{
+  padding:13px 15px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;flex-shrink:0;
+}
+.logo-icon{
+  width:30px;height:30px;background:var(--gold);border-radius:7px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.logo-icon svg{width:16px;height:16px;fill:var(--bg);}
+.logo-name{font-family:'DM Serif Display',serif;font-size:17px;flex:1;}
+.vbadge{
+  font-size:9px;font-weight:700;letter-spacing:0.5px;
+  background:rgba(232,201,122,.12);color:var(--gold);
+  padding:2px 7px;border-radius:20px;
+}
+.btn-tog{
+  background:none;border:1px solid var(--border2);border-radius:7px;
+  cursor:pointer;padding:5px 9px;color:var(--text3);
+  display:flex;align-items:center;gap:4px;
+  font-size:10px;font-family:'DM Sans',sans-serif;font-weight:500;
+  transition:all .2s;
+}
+.btn-tog:hover{color:var(--gold);border-color:var(--gold);}
+.btn-tog svg{width:11px;height:11px;transition:transform .3s;}
+.btn-tog.open svg{transform:rotate(180deg);}
+
+/* ── Collapsible panel ── */
+.panel{overflow:hidden;transition:max-height .38s cubic-bezier(.4,0,.2,1);max-height:480px;flex-shrink:0;border-bottom:1px solid var(--border);}
+.panel.closed{max-height:0;}
+
+/* ── Form ── */
+.fsec{padding:13px 15px;}
+.lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--text3);margin-bottom:5px;display:block;}
+.iw{position:relative;margin-bottom:7px;}
+.ico{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none;}
+input[type=text],input[type=time],select{
+  width:100%;background:var(--surface);border:1px solid var(--border2);
+  border-radius:var(--r);color:var(--text);
+  padding:9px 9px 9px 31px;font-size:13px;
+  font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;
+}
+input[type=time],select{padding-left:9px;}
+input:focus,select:focus{border-color:var(--gold);}
+input::placeholder{color:var(--text3);}
+select option{background:#1c2030;}
+.vl{height:8px;margin:0 0 7px 15px;width:1px;background:var(--border2);}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px;}
+.stk{display:flex;flex-direction:column;gap:4px;}
+.cbrow{display:flex;align-items:center;gap:7px;margin-top:8px;cursor:pointer;font-size:12px;color:var(--text2);}
+.cbrow input{width:auto;padding:0;accent-color:var(--gold);}
+
+/* ── Filters ── */
+.filsec{padding:9px 15px 12px;border-top:1px solid var(--border);}
+.filhdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.chips{display:flex;gap:5px;flex-wrap:wrap;}
+.chip{
+  padding:5px 10px;border-radius:20px;font-size:11px;font-weight:500;
+  cursor:pointer;border:1px solid var(--border2);background:var(--surface);
+  color:var(--text2);transition:all .15s;
+  display:flex;align-items:center;gap:4px;user-select:none;
+}
+.chip.on{border-color:transparent;}
+.chip[data-f=fuel].on{background:rgba(232,201,122,.2);color:var(--gold);border-color:var(--gold);}
+.chip[data-f=food].on{background:rgba(82,212,138,.2);color:var(--green);border-color:var(--green);}
+.chip svg{width:11px;height:11px;}
+.brst{
+  background:none;border:1px solid var(--border);border-radius:6px;
+  cursor:pointer;font-size:9px;font-weight:600;color:var(--text3);
+  font-family:'DM Sans',sans-serif;letter-spacing:.5px;
+  padding:2px 7px;text-transform:uppercase;transition:all .15s;
+}
+.brst:hover{color:var(--gold);border-color:var(--gold);}
+
+/* ── Buttons ── */
+.bsec{padding:12px 15px;border-top:1px solid var(--border);}
+.brow{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.btn{
+  border:none;cursor:pointer;border-radius:var(--r);
+  font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;
+  padding:10px 10px;display:flex;align-items:center;
+  justify-content:center;gap:6px;transition:all .18s;width:100%;
+}
+.btn svg{width:13px;height:13px;flex-shrink:0;}
+.btn-go{background:var(--gold);color:#0d0f14;grid-column:1/-1;}
+.btn-go:hover{background:var(--gold2);}
+.btn-stops{background:var(--surface);color:var(--text);border:1px solid var(--border2);}
+.btn-stops:hover:not(:disabled){background:var(--surface2);}
+.btn-clr{background:transparent;color:var(--text3);border:1px solid var(--border);}
+.btn-clr:hover{color:var(--red);border-color:var(--red);}
+.btn:disabled{opacity:.32;cursor:not-allowed;}
+
+/* ── Stats ── */
+.stats{
+  padding:9px 15px;display:grid;grid-template-columns:repeat(3,1fr);
+  gap:7px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.sc{background:var(--surface);border-radius:9px;padding:7px 9px;text-align:center;}
+.sv{font-family:'DM Serif Display',serif;font-size:16px;line-height:1;}
+.sl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-top:3px;}
+
+/* ── Status ── */
+.sbar{padding:7px 15px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.smsg{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px;}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--text3);flex-shrink:0;transition:background .3s;}
+.dot.spin{background:var(--gold);animation:blink .8s infinite;}
+.dot.ok{background:var(--green);}
+.dot.err{background:var(--red);}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* ── Progress ── */
+.pgwrap{height:2px;background:var(--surface);flex-shrink:0;}
+.pgbar{height:2px;background:var(--gold);width:0%;transition:width .35s ease;}
+
+/* ── Results ── */
+.rhdr{padding:9px 15px 5px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.rt{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--text3);}
+.rc{font-size:11px;color:var(--gold);font-weight:500;}
+.rlist{flex:1;overflow-y:auto;padding:0 9px 9px;min-height:0;scrollbar-width:thin;scrollbar-color:var(--surface2) transparent;}
+
+/* ── Stop group ── */
+.ghdr{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  color:var(--gold);padding:10px 3px 5px;
+  display:flex;align-items:center;gap:7px;
+}
+.ghdr::after{content:'';flex:1;height:1px;background:var(--border2);}
+
+/* ── Card ── */
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:10px 12px;margin-bottom:6px;
+  cursor:pointer;transition:border-color .15s,background .15s;
+}
+.card:hover{border-color:var(--border2);background:var(--surface2);}
+.card.hl{border-color:var(--gold);}
+.ctop{display:flex;align-items:flex-start;justify-content:space-between;gap:7px;}
+.cname{font-size:13px;font-weight:500;}
+.cbadge{
+  font-size:9px;font-weight:700;padding:3px 6px;border-radius:5px;
+  flex-shrink:0;text-transform:uppercase;letter-spacing:.4px;
+}
+.cbadge.fuel{background:rgba(232,201,122,.15);color:var(--gold);}
+.cbadge.food{background:rgba(82,212,138,.15);color:var(--green);}
+.cprices{
+  margin-top:7px;display:flex;gap:5px;flex-wrap:wrap;
+}
+.cpill{
+  font-size:10px;font-weight:500;padding:3px 8px;
+  border-radius:6px;background:var(--surface2);color:var(--text2);
+  border:1px solid var(--border2);
+}
+.cpill strong{color:var(--text);font-weight:600;}
+.cinfo{margin-top:6px;display:flex;gap:10px;flex-wrap:wrap;}
+.ci{font-size:10px;color:var(--text3);display:flex;align-items:center;gap:3px;}
+.ci svg{width:10px;height:10px;}
+.cempty{font-size:11px;color:var(--text3);font-style:italic;}
+
+/* ══ MAP ══════════════════════════════════════ */
+#map{flex:1;height:100vh;}
+
+/* Leaflet popup override */
+.leaflet-popup-content-wrapper{
+  background:var(--surface) !important;color:var(--text) !important;
+  border:1px solid var(--border2) !important;
+  border-radius:var(--r) !important;
+  box-shadow:0 10px 40px rgba(0,0,0,.7) !important;
+  padding:0 !important;min-width:200px;
+}
+.leaflet-popup-content{margin:0 !important;width:auto !important;}
+.pop{padding:12px 14px;}
+.pop-title{font-size:13px;font-weight:600;margin-bottom:5px;}
+.pop-badge{display:inline-block;font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;}
+.pop-badge.fuel{background:rgba(232,201,122,.15);color:var(--gold);}
+.pop-badge.food{background:rgba(82,212,138,.15);color:var(--green);}
+.pop-row{font-size:11px;color:var(--text2);margin-bottom:3px;display:flex;align-items:baseline;gap:5px;}
+.pop-row strong{color:var(--text);font-weight:600;}
+.pop-prices{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
+.pp{font-size:10px;padding:3px 7px;border-radius:5px;background:var(--surface2);color:var(--text2);}
+.pp strong{color:var(--gold);}
+.leaflet-popup-tip{background:var(--surface) !important;}
+.leaflet-popup-close-button{color:var(--text2) !important;top:7px !important;right:9px !important;}
+
+@media(max-width:720px){
+  body{flex-direction:column;}
+  .sidebar{width:100%;min-width:unset;height:auto;max-height:60vh;}
+  #map{height:40vh;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ SIDEBAR ═══════════════════════════════════ -->
+<div class="sidebar">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+    </div>
+    <span class="logo-name">MiRuta</span>
+    <span class="vbadge">v2.0</span>
+    <button class="btn-tog open" id="btnTog">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+      Masquer
+    </button>
+  </div>
+
+  <!-- Collapsible panel -->
+  <div class="panel" id="panel">
+    <div class="fsec">
+      <!-- Route inputs -->
+      <div class="iw">
+        <svg class="ico" viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><circle cx="8" cy="8" r="3"/><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 1a6 6 0 1 1 0 12A6 6 0 0 1 8 2z"/></svg>
+        <input type="text" id="start" placeholder="Départ…" value="Paris"/>
+      </div>
+      <div class="vl"></div>
+      <div class="iw">
+        <svg class="ico" viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
+        <input type="text" id="end" placeholder="Arrivée…" value="Barcelone"/>
+      </div>
+
+      <!-- Planning options -->
+      <div class="g2">
+        <div class="stk">
+          <span class="lbl">Heure de départ</span>
+          <input type="time" id="depTime" value="08:00"/>
+        </div>
+        <div class="stk">
+          <span class="lbl">Arrêt toutes les</span>
+          <select id="interval">
+            <option value="60">1 heure</option>
+            <option value="90">1h30</option>
+            <option value="120" selected>2 heures</option>
+            <option value="150">2h30</option>
+            <option value="180">3 heures</option>
+          </select>
+        </div>
+      </div>
+      <label class="cbrow">
+        <input type="checkbox" id="lunchSnap" checked/>
+        Caler un arrêt déjeuner (12h–14h)
+      </label>
+    </div>
+
+    <!-- Filters -->
+    <div class="filsec">
+      <div class="filhdr">
+        <span class="lbl" style="margin-bottom:0">Afficher sur la carte</span>
+        <button class="brst" id="btnReset">↺ Tout</button>
+      </div>
+      <div class="chips">
+        <div class="chip on" data-f="fuel">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33 0 1.38 1.12 2.5 2.5 2.5.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1s-1-.45-1-1V14c0-1.1-.9-2-2-2h-1V5c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v16h10v-7.5h1.5v5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V9c0-.69-.28-1.32-.73-1.77z"/></svg>
+          Stations (prix)
+        </div>
+        <div class="chip on" data-f="food">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></svg>
+          Restaurants (spécialité)
+        </div>
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="bsec">
+      <div class="brow">
+        <button class="btn btn-go" id="btnRoute">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3L3 10.53v.98l6.84 2.65L12.48 21h.98L21 3z"/></svg>
+          Calculer l'itinéraire
+        </button>
+        <button class="btn btn-stops" id="btnStops" disabled>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+          Trouver arrêts
+        </button>
+        <button class="btn btn-clr" id="btnClear">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          Effacer tout
+        </button>
+      </div>
+    </div>
+  </div><!-- /panel -->
+
+  <!-- Stats (always visible) -->
+  <div class="stats">
+    <div class="sc"><div class="sv" id="sDist">—</div><div class="sl">Distance</div></div>
+    <div class="sc"><div class="sv" id="sDur">—</div><div class="sl">Durée</div></div>
+    <div class="sc"><div class="sv" id="sStops">0</div><div class="sl">Arrêts</div></div>
+  </div>
+
+  <!-- Status -->
+  <div class="sbar">
+    <div class="smsg"><div class="dot" id="dot"></div><span id="stxt">Entrez votre itinéraire</span></div>
+  </div>
+  <div class="pgwrap"><div class="pgbar" id="pbar"></div></div>
+
+  <!-- Results header -->
+  <div class="rhdr" id="rhdr" style="display:none">
+    <span class="rt">Arrêts du trajet</span>
+    <span class="rc" id="rcnt"></span>
+  </div>
+
+  <!-- Results list -->
+  <div class="rlist" id="rlist"></div>
+
+</div><!-- /sidebar -->
+
+<!-- ══ MAP ════════════════════════════════════ -->
+<div id="map"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════
+const ORS_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjZhMmQ3MGMxMDcxZTQ2MDk4MDNkOGQyYTE2ZGZhYTcyIiwiaCI6Im11cm11cjY0In0=";
+
+// France open data — fuel prices (official govt API, CORS enabled)
+const FUEL_FR_API = "https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2/records";
+
+// Overpass for restaurants + Spanish fuel stations
+const OVERPASS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://lz4.overpass-api.de/api/interpreter",
+  "https://z.overpass-api.de/api/interpreter"
+];
+
+// ═══════════════════════════════════════════════
+//  MAP
+// ═══════════════════════════════════════════════
+const map = L.map("map",{zoomControl:false}).setView([44,2],6);
+L.control.zoom({position:"bottomright"}).addTo(map);
+L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{
+  attribution:"© OpenStreetMap © CARTO",maxZoom:19
+}).addTo(map);
+
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let routeCoords=[], routeSec=0, routeLayer=null;
+let markers=[];       // [startMk, endMk, ...stopMks]
+let filters=new Set(["fuel","food"]);
+
+// ═══════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════
+const $=id=>document.getElementById(id);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+function setStatus(msg,state="idle"){
+  $("dot").className="dot"+(state==="spin"?" spin":state==="ok"?" ok":state==="err"?" err":"");
+  $("stxt").textContent=msg;
+}
+function setProgress(p){ $("pbar").style.width=p+"%"; }
+
+function fmtKm(m){return (m/1000).toFixed(0)+" km";}
+function fmtDur(s){
+  const h=Math.floor(s/3600),m=Math.round((s%3600)/60);
+  return h>0?h+"h"+String(m).padStart(2,"0"):m+"min";
+}
+function addMin(hhmm,min){
+  const [h,m]=hhmm.split(":").map(Number);
+  const t=h*60+m+min;
+  return String(Math.floor(t/60)%24).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
+}
+function coordAt(frac){
+  const i=Math.min(Math.floor(frac*(routeCoords.length-1)),routeCoords.length-1);
+  return routeCoords[i];
+}
+// Is a lat/lon in France (approximate bbox)?
+function inFrance(lat,lon){ return lat>42.3&&lat<51.2&&lon>-5&&lon<8.5; }
+
+function fmtPrice(v){
+  if(v==null||v===undefined||v==="") return null;
+  const n=parseFloat(v);
+  return isNaN(n)?null:n.toFixed(3)+"€";
+}
+
+// ═══════════════════════════════════════════════
+//  GEOCODE
+// ═══════════════════════════════════════════════
+async function geocode(q){
+  const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`);
+  const d=await r.json();
+  if(!d.length) throw new Error("Lieu introuvable : "+q);
+  return [parseFloat(d[0].lat),parseFloat(d[0].lon)];
+}
+
+// ═══════════════════════════════════════════════
+//  FUEL STATIONS — France (prix officiels)
+// ═══════════════════════════════════════════════
+async function fuelFrance(lat,lon){
+  // Official French govt API: geofilter within 5km, motorway stations preferred
+  const url=FUEL_FR_API+"?"+new URLSearchParams({
+    limit:8,
+    where:`within_distance(geom,geom'POINT(${lon} ${lat})',5km)`,
+    select:"id,nom,adresse,ville,longitude,latitude,gazole_prix,sp95_prix,sp98_prix,e10_prix,e85_prix,gplc_prix,autoroute,enseignes",
+    order_by:"autoroute desc"
+  });
+  try{
+    const r=await fetch(url);
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const d=await r.json();
+    return (d.results||[]).map(s=>({
+      type:"fuel",
+      lat:parseFloat(s.latitude)||lat,
+      lon:parseFloat(s.longitude)||lon,
+      name: s.nom||s.enseignes||"Station",
+      brand: s.enseignes||s.nom||"",
+      address: [s.adresse,s.ville].filter(Boolean).join(", "),
+      motorway: s.autoroute==="Oui"||s.autoroute===true,
+      prices:{
+        gazole: fmtPrice(s.gazole_prix),
+        sp95:   fmtPrice(s.sp95_prix),
+        sp98:   fmtPrice(s.sp98_prix),
+        e10:    fmtPrice(s.e10_prix),
+        e85:    fmtPrice(s.e85_prix),
+        gplc:   fmtPrice(s.gplc_prix)
+      }
+    }));
+  }catch(e){
+    console.warn("FuelFrance err",e.message);
+    return [];
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  FUEL STATIONS — Spain + fallback (Overpass)
+// ═══════════════════════════════════════════════
+async function fuelOverpass(lat,lon){
+  const q=`[out:json][timeout:8];(node(around:4000,${lat.toFixed(4)},${lon.toFixed(4)})["amenity"="fuel"]["name"];);out 6;`;
+  for(const ep of OVERPASS){
+    try{
+      const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),9000);
+      const r=await fetch(ep,{method:"POST",body:q,signal:ctrl.signal});
+      if(!r.ok) continue;
+      const d=await r.json();
+      return (d.elements||[]).map(e=>({
+        type:"fuel",
+        lat:e.lat,lon:e.lon,
+        name: e.tags?.name||e.tags?.brand||"Station",
+        brand: e.tags?.brand||"",
+        address: e.tags?.["addr:street"]||"",
+        motorway: (e.tags?.highway==="services"||e.tags?.["access"]==="customers"),
+        prices:{gazole:null,sp95:null,sp98:null,e10:null}
+      }));
+    }catch(e){console.warn("FuelOV",ep,e.message);}
+  }
+  return [];
+}
+
+// ═══════════════════════════════════════════════
+//  RESTAURANTS (Overpass — cuisine tag = speciality)
+// ═══════════════════════════════════════════════
+async function restaurants(lat,lon){
+  const q=`[out:json][timeout:8];(node(around:3000,${lat.toFixed(4)},${lon.toFixed(4)})["amenity"="restaurant"]["name"];node(around:3000,${lat.toFixed(4)},${lon.toFixed(4)})["amenity"="fast_food"]["name"];);out 6;`;
+  for(const ep of OVERPASS){
+    try{
+      const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(),9000);
+      const r=await fetch(ep,{method:"POST",body:q,signal:ctrl.signal});
+      if(!r.ok) continue;
+      const d=await r.json();
+      return (d.elements||[]).map(e=>{
+        const cuisine=(e.tags?.cuisine||"").replace(/_/g," ");
+        const style=cuisine?cuisine.split(";")[0].trim():"";
+        return {
+          type:"food",
+          lat:e.lat,lon:e.lon,
+          name: e.tags?.name||"Restaurant",
+          cuisine: style,
+          kind: e.tags?.amenity==="fast_food"?"Restauration rapide":"Restaurant",
+          address: [e.tags?.["addr:street"],e.tags?.["addr:housenumber"]].filter(Boolean).join(" "),
+          phone: e.tags?.phone||e.tags?.["contact:phone"]||"",
+          hours: e.tags?.opening_hours||""
+        };
+      });
+    }catch(e){console.warn("RestOV",ep,e.message);}
+  }
+  return [];
+}
+
+// ═══════════════════════════════════════════════
+//  ICONS
+// ═══════════════════════════════════════════════
+function makeIcon(type,num){
+  const C=type==="fuel"?"#e8c97a":"#52d48a";
+  const sym=type==="fuel"
+    ?`<text x="15" y="19" text-anchor="middle" font-size="11" font-family="Arial" fill="${C}" font-weight="700">${num}</text>`
+    :` <text x="15" y="19" text-anchor="middle" font-size="11" font-family="Arial" fill="${C}" font-weight="700">${num}</text>`;
+  return L.divIcon({
+    html:`<svg xmlns="http://www.w3.org/2000/svg" width="30" height="37" viewBox="0 0 30 37">
+      <path d="M15 1C7.8 1 2 6.8 2 14c0 9.5 13 22.5 13 22.5S28 23.5 28 14C28 6.8 22.2 1 15 1z" fill="${C}" opacity=".25" stroke="${C}" stroke-width="1.5"/>
+      <path d="M15 4C9.5 4 5 8.5 5 14c0 7.5 10 18 10 18S25 21.5 25 14C25 8.5 20.5 4 15 4z" fill="${C}" opacity=".15"/>
+      <circle cx="15" cy="14" r="9" fill="#12151d" stroke="${C}" stroke-width="1.5"/>
+      ${sym}
+    </svg>`,
+    iconSize:[30,37],iconAnchor:[15,37],popupAnchor:[0,-35],className:""
+  });
+}
+function endIcon(col){
+  return L.divIcon({
+    html:`<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+      <circle cx="9" cy="9" r="8" fill="${col}" opacity=".3" stroke="${col}" stroke-width="1.5"/>
+      <circle cx="9" cy="9" r="4" fill="${col}"/>
+    </svg>`,
+    iconSize:[18,18],iconAnchor:[9,9],className:""
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  POPUP CONTENT
+// ═══════════════════════════════════════════════
+function popupFuel(poi){
+  const prices=Object.entries(poi.prices)
+    .filter(([,v])=>v)
+    .map(([k,v])=>`<div class="pp"><strong>${v}</strong> ${k.toUpperCase()}</div>`)
+    .join("");
+  return `<div class="pop">
+    <div class="pop-title">${poi.name}</div>
+    <div class="pop-badge fuel">⛽ Station-service${poi.motorway?" · Autoroute":""}</div>
+    ${poi.brand&&poi.brand!==poi.name?`<div class="pop-row">Enseigne : <strong>${poi.brand}</strong></div>`:""}
+    ${poi.address?`<div class="pop-row">📍 ${poi.address}</div>`:""}
+    ${prices?`<div class="pop-prices">${prices}</div>`:`<div class="pop-row" style="margin-top:4px;font-style:italic;font-size:10px">Prix non disponibles (Espagne)</div>`}
+  </div>`;
+}
+function popupFood(poi){
+  return `<div class="pop">
+    <div class="pop-title">${poi.name}</div>
+    <div class="pop-badge food">🍽 ${poi.kind}</div>
+    ${poi.cuisine?`<div class="pop-row">Spécialité : <strong>${poi.cuisine}</strong></div>`:""}
+    ${poi.address?`<div class="pop-row">📍 ${poi.address}</div>`:""}
+    ${poi.hours?`<div class="pop-row">🕐 ${poi.hours}</div>`:""}
+    ${poi.phone?`<div class="pop-row">📞 ${poi.phone}</div>`:""}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════
+//  CALC ROUTE
+// ═══════════════════════════════════════════════
+async function calcRoute(){
+  clearAll();
+  setProgress(10); setStatus("Géocodage…","spin");
+  try{
+    const [s,e]=await Promise.all([geocode($("start").value),geocode($("end").value)]);
+    setProgress(30); setStatus("Calcul de l'itinéraire…","spin");
+    const res=await fetch("https://api.openrouteservice.org/v2/directions/driving-car/geojson",{
+      method:"POST",
+      headers:{"Authorization":ORS_KEY,"Content-Type":"application/json"},
+      body:JSON.stringify({coordinates:[[s[1],s[0]],[e[1],e[0]]]})
+    });
+    const data=await res.json();
+    if(!data.features?.length) throw new Error("Aucun itinéraire trouvé");
+
+    routeCoords=data.features[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+    routeSec=data.features[0].properties.summary.duration;
+    routeLayer=L.polyline(routeCoords,{color:"#e8c97a",weight:3.5,opacity:.8}).addTo(map);
+    map.fitBounds(routeLayer.getBounds(),{padding:[50,50]});
+
+    markers.push(
+      L.marker(s,{icon:endIcon("#5ba3ff")}).addTo(map).bindPopup(`<div class="pop"><div class="pop-title">${$("start").value}</div><div class="pop-row">Départ</div></div>`),
+      L.marker(e,{icon:endIcon("#ff6b6b")}).addTo(map).bindPopup(`<div class="pop"><div class="pop-title">${$("end").value}</div><div class="pop-row">Arrivée</div></div>`)
+    );
+
+    const sum=data.features[0].properties.summary;
+    $("sDist").textContent=fmtKm(sum.distance);
+    $("sDur").textContent=fmtDur(sum.duration);
+    $("sStops").textContent="0";
+    $("btnStops").disabled=false;
+    setProgress(100); setStatus("Itinéraire calculé — cherchez les arrêts","ok");
+    setTimeout(()=>setProgress(0),700);
+  }catch(err){
+    setStatus("Erreur : "+err.message,"err"); setProgress(0); console.error(err);
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  FIND STOPS
+// ═══════════════════════════════════════════════
+async function findStops(){
+  if(!routeCoords.length){setStatus("Calculez d'abord un itinéraire","err");return;}
+
+  // Reset previous stops
+  markers.slice(2).forEach(m=>map.removeLayer(m)); markers=markers.slice(0,2);
+  $("rlist").innerHTML=""; $("rhdr").style.display="none"; $("sStops").textContent="0";
+
+  const dep=$("depTime").value||"08:00";
+  const iv=parseInt($("interval").value)||120;
+  const lunch=$("lunchSnap").checked;
+  const totalMin=Math.round(routeSec/60);
+
+  // Build stop times
+  const times=[];
+  for(let t=iv;t<totalMin-10;t+=iv) times.push(t);
+  if(lunch){
+    const [dh,dm]=dep.split(":").map(Number);
+    const w12=12*60-(dh*60+dm), w14=14*60-(dh*60+dm);
+    if(!times.some(t=>t>=w12&&t<=w14)&&w12>10&&w12<totalMin-10){
+      times.push(Math.max(w12,Math.min(w14,w12+30))); times.sort((a,b)=>a-b);
+    }
+  }
+  if(!times.length){setStatus("Trajet trop court pour des arrêts","err");return;}
+
+  $("btnStops").disabled=true; $("btnRoute").disabled=true;
+  let stopCount=0;
+
+  for(let i=0;i<times.length;i++){
+    const t=times[i];
+    const frac=Math.min(t/totalMin,.97);
+    const [lat,lon]=coordAt(frac);
+    const eta=addMin(dep,t);
+    const [dh,dm]=dep.split(":").map(Number);
+    const absH=((dh*60+dm+t)%1440)/60;
+    const isLunch=absH>=12&&absH<=14;
+
+    setProgress(Math.round(((i+.5)/times.length)*100));
+    setStatus(`Arrêt ${i+1}/${times.length} · ${eta} — recherche…`,"spin");
+
+    // Parallel fetch: fuel + restaurants
+    const fuelFn = filters.has("fuel")
+      ? (inFrance(lat,lon) ? fuelFrance(lat,lon) : fuelOverpass(lat,lon))
+      : Promise.resolve([]);
+    const foodFn = filters.has("food") ? restaurants(lat,lon) : Promise.resolve([]);
+
+    const [fuels,foods]=await Promise.all([fuelFn, foodFn]);
+
+    // Pick best: closest fuel + up to 2 restaurants
+    const bestFuel = fuels.sort((a,b)=>
+      Math.hypot(a.lat-lat,a.lon-lon)-Math.hypot(b.lat-lat,b.lon-lon)
+    )[0]||null;
+
+    const bestFoods = foods
+      .sort((a,b)=>Math.hypot(a.lat-lat,a.lon-lon)-Math.hypot(b.lat-lat,b.lon-lon))
+      .slice(0,2);
+
+    const pois=[...(bestFuel?[bestFuel]:[]),...bestFoods];
+
+    // Place markers with hover tooltips
+    pois.forEach((poi,pi)=>{
+      const mk=L.marker([poi.lat,poi.lon],{icon:makeIcon(poi.type,i+1)}).addTo(map);
+      mk.bindPopup(poi.type==="fuel"?popupFuel(poi):popupFood(poi),{maxWidth:280});
+      // Open on hover
+      mk.on("mouseover",()=>mk.openPopup());
+      markers.push(mk);
+    });
+
+    // Render card
+    renderStopCard(i,eta,isLunch,bestFuel,bestFoods);
+    stopCount++; $("sStops").textContent=stopCount;
+
+    if(i===0) $("rhdr").style.display="flex";
+    $("rcnt").textContent=stopCount+" arrêt"+(stopCount>1?"s":"");
+
+    if(i<times.length-1) await sleep(800);
+  }
+
+  setProgress(100);
+  setStatus(`✓ ${stopCount} arrêt${stopCount>1?"s":""} planifié${stopCount>1?"s":""}`, "ok");
+  setTimeout(()=>setProgress(0),800);
+  $("btnStops").disabled=false; $("btnRoute").disabled=false;
+}
+
+// ═══════════════════════════════════════════════
+//  RENDER STOP CARD
+// ═══════════════════════════════════════════════
+function renderStopCard(idx,eta,isLunch,fuel,foods){
+  const list=$("rlist");
+
+  // Group header
+  const gh=document.createElement("div");
+  gh.className="ghdr";
+  gh.textContent=`Arrêt ${idx+1}  ·  ${eta}${isLunch?" 🍽":""}`;
+  list.appendChild(gh);
+
+  // ── Fuel card
+  if(fuel&&filters.has("fuel")){
+    const card=document.createElement("div"); card.className="card";
+    const ps=Object.entries(fuel.prices).filter(([,v])=>v)
+      .map(([k,v])=>`<div class="cpill">${k.toUpperCase()} <strong>${v}</strong></div>`).join("");
+    card.innerHTML=`
+      <div class="ctop">
+        <div class="cname">⛽ ${fuel.name}</div>
+        <div class="cbadge fuel">${fuel.motorway?"Autoroute":"Station"}</div>
+      </div>
+      ${fuel.brand&&fuel.brand!==fuel.name?`<div class="ci" style="margin-top:4px"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h12v12H2z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg> ${fuel.brand}</div>`:""}
+      ${ps?`<div class="cprices">${ps}</div>`:`<div class="ci" style="margin-top:4px;font-style:italic">Prix en temps réel non disponibles (Espagne)</div>`}
+      ${fuel.address?`<div class="cinfo"><div class="ci"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>${fuel.address}</div></div>`:""}
+    `;
+    card.addEventListener("click",()=>{
+      map.setView([fuel.lat,fuel.lon],15,{animate:true});
+      const mk=markers.find(m=>Math.abs(m.getLatLng().lat-fuel.lat)<.0002);
+      if(mk) mk.openPopup();
+      document.querySelectorAll(".card").forEach(c=>c.classList.remove("hl"));
+      card.classList.add("hl");
+    });
+    list.appendChild(card);
+  }
+
+  // ── Restaurant cards
+  if(filters.has("food")){
+    foods.forEach(r=>{
+      const card=document.createElement("div"); card.className="card";
+      card.innerHTML=`
+        <div class="ctop">
+          <div class="cname">🍽 ${r.name}</div>
+          <div class="cbadge food">${r.kind==="Restaurant"?"Restaurant":"Fast-food"}</div>
+        </div>
+        ${r.cuisine?`<div class="ci" style="margin-top:5px;font-size:11px;color:var(--text2)">✦ ${r.cuisine.charAt(0).toUpperCase()+r.cuisine.slice(1)}</div>`:""}
+        <div class="cinfo">
+          ${r.address?`<div class="ci"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>${r.address}</div>`:""}
+          ${r.hours?`<div class="ci"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/></svg>${r.hours}</div>`:""}
+        </div>
+      `;
+      card.addEventListener("click",()=>{
+        map.setView([r.lat,r.lon],15,{animate:true});
+        const mk=markers.find(m=>Math.abs(m.getLatLng().lat-r.lat)<.0002);
+        if(mk) mk.openPopup();
+        document.querySelectorAll(".card").forEach(c=>c.classList.remove("hl"));
+        card.classList.add("hl");
+      });
+      list.appendChild(card);
+    });
+    if(!foods.length){
+      const empty=document.createElement("div"); empty.className="card";
+      empty.innerHTML=`<div class="cempty">Aucun restaurant trouvé à ce point</div>`;
+      list.appendChild(empty);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  CLEAR
+// ═══════════════════════════════════════════════
+function clearAll(){
+  markers.forEach(m=>map.removeLayer(m)); markers=[];
+  if(routeLayer){map.removeLayer(routeLayer);routeLayer=null;}
+  routeCoords=[]; routeSec=0;
+  $("sDist").textContent=$("sDur").textContent="—"; $("sStops").textContent="0";
+  $("rlist").innerHTML=""; $("rhdr").style.display="none";
+  $("btnStops").disabled=true; $("btnRoute").disabled=false;
+  setProgress(0); setStatus("Entrez votre itinéraire","idle");
+}
+
+// ═══════════════════════════════════════════════
+//  UI CONTROLS
+// ═══════════════════════════════════════════════
+// Collapse
+const panel=$("panel"),tog=$("btnTog"); let open=true;
+tog.addEventListener("click",()=>{
+  open=!open;
+  panel.classList.toggle("closed",!open);
+  tog.classList.toggle("open",open);
+  tog.innerHTML=open
+    ?`<svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg> Masquer`
+    :`<svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg> Afficher`;
+  setTimeout(()=>map.invalidateSize(),390);
+});
+
+// Filter chips
+document.querySelectorAll(".chip").forEach(c=>{
+  c.addEventListener("click",()=>{
+    const f=c.dataset.f;
+    if(filters.has(f)){filters.delete(f);c.classList.remove("on");}
+    else{filters.add(f);c.classList.add("on");}
+  });
+});
+$("btnReset").addEventListener("click",()=>{
+  filters=new Set(["fuel","food"]);
+  document.querySelectorAll(".chip").forEach(c=>c.classList.add("on"));
+});
+
+$("btnRoute").addEventListener("click",calcRoute);
+$("btnStops").addEventListener("click",findStops);
+$("btnClear").addEventListener("click",clearAll);
+</script>
+</body>
+</html>
