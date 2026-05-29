@@ -246,7 +246,7 @@ select option{background:#1c2030;}
       <div class="vl"></div>
       <div class="iw">
         <svg class="ico" viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
-        <input type="text" id="end" placeholder="Arrivée…" value="Aldeanueva de San Bartolome"/>
+        <input type="text" id="end" placeholder="Arrivée…" value="Barcelone"/>
       </div>
 
       <!-- Planning options -->
@@ -343,7 +343,8 @@ select option{background:#1c2030;}
 const ORS_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjZhMmQ3MGMxMDcxZTQ2MDk4MDNkOGQyYTE2ZGZhYTcyIiwiaCI6Im11cm11cjY0In0=";
 
 // France open data — fuel prices (official govt API, CORS enabled)
-const FUEL_FR_API = "https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2/records";
+// api.prix-carburants.2aaz.fr — based on official govt data, proper CORS, GPS search
+const FUEL_FR_API = "https://api.prix-carburants.2aaz.fr/station/around";
 
 // Overpass for restaurants + Spanish fuel stations
 const OVERPASS = [
@@ -417,34 +418,36 @@ async function geocode(q){
 //  FUEL STATIONS — France (prix officiels)
 // ═══════════════════════════════════════════════
 async function fuelFrance(lat,lon){
-  // Official French govt API — geofilter.distance: lat,lon,radius_metres (correct syntax)
-  const params = new URLSearchParams();
-  params.set("limit","8");
-  params.set("geofilter.distance", lat.toFixed(5)+","+lon.toFixed(5)+",5000");
-  params.set("select","id,nom,adresse,ville,longitude,latitude,gazole_prix,sp95_prix,sp98_prix,e10_prix,e85_prix,gplc_prix,autoroute,enseignes");
-  params.set("order_by","autoroute desc");
-  const url = FUEL_FR_API+"?"+params.toString();
+  // api.prix-carburants.2aaz.fr — official govt data, CORS enabled, GPS search
+  // GET /station/around/{lat}/{lon}?nb=5&type=A  (type A = autoroute)
   try{
+    const url=`${FUEL_FR_API}/${lat.toFixed(5)}/${lon.toFixed(5)}?nb=6`;
     const r=await fetch(url);
     if(!r.ok) throw new Error("HTTP "+r.status);
-    const d=await r.json();
-    return (d.results||[]).map(s=>({
-      type:"fuel",
-      lat:parseFloat(s.latitude)||lat,
-      lon:parseFloat(s.longitude)||lon,
-      name: s.nom||s.enseignes||"Station",
-      brand: s.enseignes||s.nom||"",
-      address: [s.adresse,s.ville].filter(Boolean).join(", "),
-      motorway: s.autoroute==="Oui"||s.autoroute===true,
-      prices:{
-        gazole: fmtPrice(s.gazole_prix),
-        sp95:   fmtPrice(s.sp95_prix),
-        sp98:   fmtPrice(s.sp98_prix),
-        e10:    fmtPrice(s.e10_prix),
-        e85:    fmtPrice(s.e85_prix),
-        gplc:   fmtPrice(s.gplc_prix)
-      }
-    }));
+    const stations=await r.json();
+    if(!Array.isArray(stations)) return [];
+    return stations.map(s=>{
+      // prices array: [{id:1,name:"Gazole",price:1.829}, ...]
+      const priceMap={};
+      (s.prices||[]).forEach(p=>{ priceMap[p.shortName||p.name]=fmtPrice(p.price); });
+      return {
+        type:"fuel",
+        lat: s.coordinates?.latitude||s.latitude||lat,
+        lon: s.coordinates?.longitude||s.longitude||lon,
+        name: s.name||s.brand||"Station",
+        brand: s.brand||"",
+        address: [s.address?.street,s.address?.city].filter(Boolean).join(", "),
+        motorway: s.type==="A"||s.highway===true,
+        prices:{
+          Gazole:   priceMap["Gazole"]||null,
+          SP95:     priceMap["SP95"]||null,
+          SP98:     priceMap["SP98"]||null,
+          E10:      priceMap["SP95-E10"]||priceMap["E10"]||null,
+          E85:      priceMap["E85"]||null,
+          GPLc:     priceMap["GPLc"]||null
+        }
+      };
+    });
   }catch(e){
     console.warn("FuelFrance err",e.message);
     return [];
@@ -458,7 +461,8 @@ async function fuelOverpass(lat,lon){
   const q=`[out:json][timeout:8];(node(around:4000,${lat.toFixed(4)},${lon.toFixed(4)})["amenity"="fuel"]["name"];);out 6;`;
   for(const ep of OVERPASS){
     try{
-      const ctrl=new AbortController(); const tid=setTimeout(()=>ctrl.abort(),18000);
+      const ctrl=new AbortController();
+      const tid=setTimeout(()=>ctrl.abort(),18000);
       const r=await fetch(ep,{method:"POST",body:q,signal:ctrl.signal});
       clearTimeout(tid);
       if(!r.ok) continue;
@@ -484,7 +488,8 @@ async function restaurants(lat,lon){
   const q=`[out:json][timeout:8];(node(around:3000,${lat.toFixed(4)},${lon.toFixed(4)})["amenity"="restaurant"]["name"];node(around:3000,${lat.toFixed(4)},${lon.toFixed(4)})["amenity"="fast_food"]["name"];);out 6;`;
   for(const ep of OVERPASS){
     try{
-      const ctrl=new AbortController(); const tid=setTimeout(()=>ctrl.abort(),18000);
+      const ctrl=new AbortController();
+      const tid=setTimeout(()=>ctrl.abort(),18000);
       const r=await fetch(ep,{method:"POST",body:q,signal:ctrl.signal});
       clearTimeout(tid);
       if(!r.ok) continue;
@@ -704,7 +709,7 @@ function renderStopCard(idx,eta,isLunch,fuel,foods){
   if(fuel&&filters.has("fuel")){
     const card=document.createElement("div"); card.className="card";
     const ps=Object.entries(fuel.prices).filter(([,v])=>v)
-      .map(([k,v])=>`<div class="cpill">${k.toUpperCase()} <strong>${v}</strong></div>`).join("");
+      .map(([k,v])=>`<div class="cpill">${k} <strong>${v}</strong></div>`).join("");
     card.innerHTML=`
       <div class="ctop">
         <div class="cname">⛽ ${fuel.name}</div>
